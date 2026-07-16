@@ -99,6 +99,7 @@ export function createPanel(el, opts = {}) {
   function showPlace(payload) {
     const d = payload.building;
     const run = payload.run || { momentum: 0, nextReward: 5 };
+    const cargo = payload.cargo || { items: [], used: 0, capacity: 0 };
     const survivors = payload.survivors || [];
     current = { kind: 'place', x: d.x, y: d.y };
     const rooms = d.rooms || [];
@@ -123,7 +124,7 @@ export function createPanel(el, opts = {}) {
       const action = r.zombies > 0
         ? `<div class="fight-prompt">${r.intel ? `Intel +${r.intel} ATK · ` : ''}choose survivor and attack</div>${fighters}<button class="room-retreat" data-room-act="retreat" data-room="${r.id}">Retreat</button>`
         : items;
-      return `<li class="room-row">
+      return `<li class="room-row" style="--room-x:${r.gridX || 0};--room-y:${r.gridY || 0}">
         <span class="room-name"><i>${i + 1}</i>${esc(r.name)}</span>
         <span class="room-meta">${loot} · ${danger}</span>
         ${infected ? `<span class="room-hostiles">${infected}</span>` : ''}
@@ -139,9 +140,10 @@ export function createPanel(el, opts = {}) {
         <div class="panel-lvl">${rooms.length} room${rooms.length === 1 ? '' : 's'} mapped</div>
       </div>
       <p class="panel-desc">Your scouts mapped the interior. Clear infected rooms before scavenging their supplies.</p>
-      <div class="momentum"><span>RUN MOMENTUM</span><b>${run.momentum}/${run.nextReward}</b><i><em style="width:${Math.min(100, run.momentum / run.nextReward * 100)}%"></em></i><small>Fill the bar to earn a supply cache</small></div>
-      <ul class="room-list">${rows}</ul>
-      <div class="panel-coming">Fighting and scavenging are resolved by the server</div>`;
+      <div class="expedition-meters"><div class="momentum"><span>RUN MOMENTUM</span><b>${run.momentum}/${run.nextReward}</b><i><em style="width:${Math.min(100, run.momentum / run.nextReward * 100)}%"></em></i><small>Fill the bar to earn a supply cache</small></div><div class="noise-meter ${run.noise >= 6 ? 'danger' : ''}"><span>BUILDING NOISE</span><b>${run.noise || 0}/12</b><i><em style="width:${Math.min(100,(run.noise || 0)/12*100)}%"></em></i><small>${run.noise >= 6 ? 'Nearby infected are alerted' : 'Quiet actions keep danger down'}</small></div></div>
+      <div class="cargo-meter"><span>SQUAD CARGO</span><b>${cargo.used}/${cargo.capacity} kg</b><i><em style="width:${cargo.capacity ? Math.min(100,cargo.used/cargo.capacity*100) : 0}%"></em></i><small>${cargo.items.length ? cargo.items.map(i=>`${esc(i.name)} ×${i.amount}`).join(' · ') : 'Empty — carried loot is deposited after returning home'}</small></div>
+      <ul class="room-list room-map">${rows}</ul>
+      <div class="panel-coming">Choose quiet entries and guarded attacks to control noise, then return home to bank carried loot.</div>`;
     el.classList.add('open');
     dragger.restore();
   }

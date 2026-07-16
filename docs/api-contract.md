@@ -140,8 +140,8 @@ POST /api/room-action.php { action:"fight", x, y, room, survivor }
   → { ok:true, killed, remaining, secured, survivor:{hp,maxHp,damage}, weapon:{used,durability,maxDurability,ammo}, message }
 POST /api/room-action.php { action:"retreat", x, y, room }
   → { ok:true, remaining, retreated:true, message }
-POST /api/room-action.php { action:"loot", x, y, room, item }
-  → { ok:true, item:{ id, name, amount, owned }, message:"Recovered …" }
+POST /api/room-action.php { action:"loot", x, y, room, item, squad }
+  → { ok:true, item:{ id, name, amount, remaining }, cargo, message:"Packed …" }
 ```
 Room discovery uses `action:"discover"` with `approach:"quiet"|"careful"|"breach"`.
 Combat accepts `tactic:"precise"|"aggressive"|"guarded"`. Entry approaches create
@@ -153,7 +153,16 @@ ammunition and weapon condition is consumed when a usable weapon is fired/swung,
 remaining infected retaliate, and persistent health is returned. Broken or empty
 weapons contribute no attack bonus. Retreat leaves the
 room infected. Looting is blocked while zombies remain and transfers the authoritative
-room stack into the Zv2 inventory.
+room stack into the selected squad's capacity-limited cargo. Cargo is transferred into
+the standalone inventory only after the squad returns to the stronghold. Entry and
+combat choices update persistent building noise; high noise makes retaliation more dangerous.
+
+```jsonc
+GET  /api/forces.php
+POST /api/forces.php { action:"create"|"assign"|"remove"|"train", survivor, squad, focus }
+```
+Forces responses contain named squads, members, positions, readiness, cargo weight,
+Troop Quarter limits and recruit progress. Travel completion can generate route events.
 
 ```jsonc
 GET  /api/inventory.php
