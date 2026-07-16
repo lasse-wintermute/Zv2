@@ -154,15 +154,17 @@ remaining infected retaliate, and persistent health is returned. Broken or empty
 weapons contribute no attack bonus. Retreat leaves the
 room infected. Looting is blocked while zombies remain and transfers the authoritative
 room stack into the selected squad's capacity-limited cargo. Cargo is transferred into
-the standalone inventory only after the squad returns to the stronghold. Entry and
+the standalone inventory after the squad returns to a stronghold with a built Storage;
+without Storage it remains loaded on the squad. Entry and
 combat choices update persistent building noise; high noise makes retaliation more dangerous.
 
 ```jsonc
 GET  /api/forces.php
-POST /api/forces.php { action:"create"|"assign"|"remove"|"train", survivor, squad, focus }
+POST /api/forces.php { action:"create"|"assign"|"remove"|"train"|"return", survivor, squad, focus }
 ```
 Forces responses contain named squads, members, positions, readiness, cargo weight,
-Troop Quarter limits and recruit progress. Travel completion can generate route events.
+Storage availability, Troop Quarter limits and recruit progress. Travel completion can
+generate route events; `return` starts a timed journey to the stronghold.
 
 ```jsonc
 GET  /api/inventory.php

@@ -188,10 +188,11 @@ toolshopBtn.addEventListener('click', async () => { try { toolshop.show(await ge
 forcesBtn.addEventListener('click', async () => { try { forces.show(await getForces(),activeSquadId); } catch(e) { setStatus(e.message,true); } });
 zoomControls.addEventListener('click', (e) => {
   const button = e.target.closest('[data-zoom]');
-  if (!button || mode !== 'compound') return;
-  view.setZoom(view.cam.zoom + (button.dataset.zoom === 'in' ? .15 : -.15));
+  if (!button) return;
+  if(mode==='world')view.setWorldZoom(view.cam.worldZoom+(button.dataset.zoom==='in'?.15:-.15));
+  else view.setZoom(view.cam.zoom + (button.dataset.zoom === 'in' ? .15 : -.15));
   requestRender();
-  setStatus(`Compound zoom ${Math.round(view.cam.zoom * 100)}%`);
+  setStatus(`${mode==='world'?'World map':'Compound'} zoom ${Math.round((mode==='world'?view.cam.worldZoom:view.cam.zoom)*100)}%`);
 });
 inventoryBtn.addEventListener('click', async () => {
   try { inventory.show(await getInventory()); }
@@ -257,7 +258,7 @@ async function setMode(m) {
   view.cam.x = 0; view.cam.y = 0;
   panel.hide(); view.setSelected(null);
   activePlace = null;
-  zoomControls.classList.toggle('hidden', m === 'world');
+  zoomControls.classList.remove('hidden');
   if (m === 'world' && !worldState) {
     try { worldState = await getMap(12,activeSquadId); if(!activeSquadId)activeSquadId=worldState.squad.id; }
     catch (e) { setStatus('map load failed: ' + e.message, true); }
@@ -292,11 +293,12 @@ canvas.addEventListener('pointerup', (e) => {
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
 canvas.addEventListener('wheel', (e) => {
-  if (!playing || mode !== 'compound') return;
+  if (!playing) return;
   e.preventDefault();
-  view.setZoom(view.cam.zoom + (e.deltaY < 0 ? .1 : -.1));
+  if(mode==='world')view.setWorldZoom(view.cam.worldZoom+(e.deltaY<0?.1:-.1));
+  else view.setZoom(view.cam.zoom + (e.deltaY < 0 ? .1 : -.1));
   requestRender();
-  setStatus(`Compound zoom ${Math.round(view.cam.zoom * 100)}%`);
+  setStatus(`${mode==='world'?'World map':'Compound'} zoom ${Math.round((mode==='world'?view.cam.worldZoom:view.cam.zoom)*100)}%`);
 }, { passive: false });
 
 async function onClick(e) {

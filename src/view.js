@@ -22,7 +22,7 @@ const hash = (n) => { const x = Math.sin(n * 91.17) * 43758.5453; return x - Mat
 
 export function createView(canvas) {
   const ctx = canvas.getContext('2d');
-  const cam = { x: 0, y: 0, zoom: 1 };
+  const cam = { x: 0, y: 0, zoom: 1, worldZoom: 1 };
   let W = 0, H = 0;
   let placements = [];        // [{slot,type,sx,sy,level}] captured each render, for hit-testing
   let emptyPlacements = [];
@@ -318,7 +318,8 @@ export function createView(canvas) {
   function renderWorld(map) {
     ctx.clearRect(0, 0, W, H);
     sky();
-    const originX = W / 2 + cam.x, originY = H / 2 - 20 + cam.y;
+    ctx.save();ctx.translate(W/2,H/2);ctx.scale(cam.worldZoom,cam.worldZoom);ctx.translate(-W/2,-H/2);
+    const originX = W / 2 + cam.x/cam.worldZoom, originY = H / 2 - 20 + cam.y/cam.worldZoom;
     const hw = (TW / 2) * WS * 0.94, hh = (TH / 2) * WS * 0.94;
 
     worldPlacements = [];
@@ -372,6 +373,7 @@ export function createView(canvas) {
       if (Number.isFinite(markerX)&&Number.isFinite(markerY)) { const active=squad.id===map.squad?.id;ctx.fillStyle=active?(squad.traveling?'#ffd75a':'#eef0c6'):'#83b4bf';ctx.beginPath();ctx.arc(markerX,markerY,active?7:6,0,Math.PI*2);ctx.fill();ctx.strokeStyle=active?'#ffe07b':'#18211c';ctx.lineWidth=active?2.5:2;ctx.stroke();ctx.fillStyle='#18211c';ctx.font='bold 8px system-ui';ctx.textAlign='center';ctx.fillText((squad.name||'S')[0],markerX,markerY+3);ctx.font='9px system-ui';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(squad.name,markerX,markerY-10);ctx.fillStyle=active?'#ffe28a':'#b8d4d7';ctx.fillText(squad.name,markerX,markerY-10); }
     }
 
+    ctx.restore();
     const seen = map.tiles.filter((t) => t.seen).length;
     ctx.textAlign = 'left';
     ctx.font = 'bold 20px system-ui, sans-serif';
@@ -383,6 +385,7 @@ export function createView(canvas) {
 
   // hit-test the world map: screen px -> tile (diamond test). null if none.
   function worldPick(x, y) {
+    x=W/2+(x-W/2)/cam.worldZoom;y=H/2+(y-H/2)/cam.worldZoom;
     const hw = (TW / 2) * WS * 0.94, hh = (TH / 2) * WS * 0.94;
     for (let i = worldPlacements.length - 1; i >= 0; i--) {
       const p = worldPlacements[i];
@@ -405,5 +408,6 @@ export function createView(canvas) {
   function setSelected(slot) { selected = slot; }
 
   function setZoom(value){cam.zoom=Math.max(.55,Math.min(1.7,value));}
-  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setZoom };
+  function setWorldZoom(value){cam.worldZoom=Math.max(.55,Math.min(2.2,value));}
+  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setZoom, setWorldZoom };
 }
