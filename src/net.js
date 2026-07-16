@@ -62,7 +62,7 @@ export async function getFacilityCatalog() { return api('/api/facility-catalog.p
 export async function getMap(r = 12, squad = 0) { return api(`/api/map.php?r=${r}&squad=${squad}`); }
 export async function getBuilding(x, y, squad = 0) { return api(`/api/building.php?x=${x}&y=${y}&squad=${squad}`); }
 export async function getForces() { return api('/api/forces.php'); }
-export async function postForces(action, survivor = 0, squad = 0, focus = '') { return api('/api/forces.php', { method:'POST', body:{ action, survivor:String(survivor), squad:String(squad), focus } }); }
+export async function postForces(action, survivor = 0, squad = 0, focus = '', item = 0) { return api('/api/forces.php', { method:'POST', body:{ action, survivor:String(survivor), squad:String(squad), focus, item:String(item) } }); }
 export async function getInventory() { return api('/api/inventory.php'); }
 export async function getResearch() { return api('/api/research.php'); }
 export async function postResearch(tech) { return api('/api/research.php', { method: 'POST', body: { tech: String(tech) } }); }

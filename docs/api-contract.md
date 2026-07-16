@@ -154,17 +154,31 @@ remaining infected retaliate, and persistent health is returned. Broken or empty
 weapons contribute no attack bonus. Retreat leaves the
 room infected. Looting is blocked while zombies remain and transfers the authoritative
 room stack into the selected squad's capacity-limited cargo. Cargo is transferred into
-the standalone inventory after the squad returns to a stronghold with a built Storage;
-without Storage it remains loaded on the squad. Entry and
+the standalone inventory only when the player uses the squad's deposit command at a
+stronghold with a built Storage; until then it remains loaded on the squad. Entry and
 combat choices update persistent building noise; high noise makes retaliation more dangerous.
 
 ```jsonc
 GET  /api/forces.php
-POST /api/forces.php { action:"create"|"assign"|"remove"|"train"|"return", survivor, squad, focus }
+POST /api/forces.php { action:"create"|"assign"|"remove"|"train"|"return"|"deposit"|"equip"|"unequip", survivor, squad, focus, item }
 ```
 Forces responses contain named squads, members, positions, readiness, cargo weight,
 Storage availability, Troop Quarter limits and recruit progress. Travel completion can
 generate route events; `return` starts a timed journey to the stronghold.
+Each squad also exposes its persistent weapon and defense loadout, slot capacities and
+combined combat stats. Equipping reserves an owned Storage item so it cannot also be
+issued to another squad or survivor. Squad attack and defense bonuses are applied to
+room combat; defensive gear can also absorb roadside-ambush damage.
+
+`GET /api/map.php?r=25` returns the complete 50×50 city. Every tile includes stable
+urban geography (`terrain`, `district`, `density`, `road`, `rail`, `landmark` and
+`districtHub`) while fog of war continues to hide building and room content.
+
+Incapacitated survivors (`hp = 0`) are admitted automatically when their squad reaches
+the stronghold and Hospital level 1 or higher is available. `hospital_treatments` keeps
+the admission and due times plus the soldier and Hospital levels used for the duration.
+The Hospital facility response exposes its `patients`; forces and inventory responses
+expose each survivor's active `treatment`. Completed patients return fully healed to reserve.
 
 ```jsonc
 GET  /api/inventory.php
@@ -174,7 +188,8 @@ POST /api/facility-assignment.php { action:"assign"|"unassign", slot, survivor }
 GET  /api/research.php
 POST /api/research.php { tech }
 ```
-The inventory response contains the stash, squad, Toolshop level, active production job,
+The inventory response contains the stash, its free and squad-reserved item counts, the
+squad, Toolshop level, active production job,
 and all production plans with live material, research, and facility-level requirements.
 Health, equipment, ammunition, and weapon condition are persistent. Healing and repair
 items are consumed server-side. Production atomically deducts ingredients, runs on a

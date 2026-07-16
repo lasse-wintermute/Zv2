@@ -77,10 +77,13 @@ export function createPanel(el, opts = {}) {
       const here = s.jobFacility === d.slot;
       const full = !here && assigned >= staffing.capacity;
       const disabled = !here && (!s.available || full);
-      const status = here ? 'assigned here' : (s.job ? `working: ${s.job}` : (s.available ? 'resting' : 'unavailable'));
+      const status = s.treatment ? 'Hospital patient' : (here ? 'assigned here' : (s.job ? `working: ${s.job}` : (s.available ? 'resting' : 'unavailable')));
       return `<li><span><b>${esc(s.name)}</b><small>${s.hp}/${s.maxHp} HP · ${s.fatigue}% fatigue · ${esc(status)}</small></span><button data-staff-act="${here ? 'unassign' : 'assign'}" data-survivor="${s.id}"${disabled ? ' disabled' : ''}>${here ? 'Rest' : 'Assign'}</button></li>`;
     }).join('');
     const staffBlock = `<div class="panel-sec staff-title">Staffing · ${assigned}/${staffing.capacity}</div><p class="staff-effect">${esc(staffing.effect)}</p><ul class="staff-list">${staffRows}</ul>`;
+    const patients=d.slot===16?(d.patients||[]):[];
+    const patientRows=patients.map(p=>{const remaining=Math.max(0,p.due-Date.now()/1000),total=Math.max(1,p.due-p.startedAt),progress=Math.min(100,Math.max(0,(1-remaining/total)*100));return `<li><span><b>${esc(p.name)} · Soldier Lv ${p.soldierLevel}</b><small>Hospital Lv ${p.hospitalLevel} · ${remaining>0?fmtDuration(remaining)+' remaining':'ready for discharge'}</small><i><em style="width:${progress}%"></em></i></span></li>`}).join('');
+    const patientBlock=d.slot===16?`<div class="panel-sec patient-title">Patients · ${patients.length}</div><p class="staff-effect">Incapacitated squad members are admitted automatically after returning home. Higher soldier levels take longer; higher Hospital levels shorten treatment.</p><ul class="patient-list">${patientRows||'<li class="patient-empty">No critical patients.</li>'}</ul>`:'';
 
     el.innerHTML = `
       <div class="panel-hd" style="--c:${color}">
@@ -90,6 +93,7 @@ export function createPanel(el, opts = {}) {
         <div class="panel-lvl">${lvl}</div>
       </div>
       <p class="panel-desc">${d.description || ''}</p>
+      ${patientBlock}
       ${staffBlock}
       ${body}`;
     el.classList.add('open');

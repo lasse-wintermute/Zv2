@@ -22,7 +22,7 @@ const hash = (n) => { const x = Math.sin(n * 91.17) * 43758.5453; return x - Mat
 
 export function createView(canvas) {
   const ctx = canvas.getContext('2d');
-  const cam = { x: 0, y: 0, zoom: 1, worldZoom: 1 };
+  const cam = { x: 0, y: 0, zoom: 1, worldZoom: .48 };
   let W = 0, H = 0;
   let placements = [];        // [{slot,type,sx,sy,level}] captured each render, for hit-testing
   let emptyPlacements = [];
@@ -296,24 +296,44 @@ export function createView(canvas) {
     if(hash(seed+6)>.62){ctx.strokeStyle='#333c36';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(sx+hw*.75,sy-h*.8);ctx.lineTo(sx+hw*.75,sy-2);for(let y=4;y<h;y+=6){ctx.moveTo(sx+hw*.55,sy-y);ctx.lineTo(sx+hw*.95,sy-y);}ctx.stroke();}
   }
 
-  function cityGround(sx,sy,hw,hh,seen,seed){
-    ctx.beginPath();ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.fillStyle=seen?'#303733':'#151d1b';ctx.fill();ctx.strokeStyle=seen?'rgba(136,129,94,.25)':'rgba(60,70,63,.18)';ctx.stroke();
-    const iw=hw*.77,ih=hh*.72;ctx.beginPath();ctx.moveTo(sx,sy-ih);ctx.lineTo(sx+iw,sy);ctx.lineTo(sx,sy+ih);ctx.lineTo(sx-iw,sy);ctx.closePath();ctx.fillStyle=seen?'#595b4d':'#232b27';ctx.fill();
-    ctx.strokeStyle=seen?'rgba(210,190,100,.3)':'rgba(100,110,77,.1)';ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(sx-hw,sy);ctx.lineTo(sx,sy+hh);ctx.stroke();ctx.setLineDash([]);
+  function diamond(sx,sy,hw,hh,fill,stroke='rgba(50,60,55,.25)'){
+    ctx.beginPath();ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.stroke();
+  }
+  function cityTree(x,y,seed,muted=false){ctx.fillStyle=muted?'#26342d':'#415b38';ctx.beginPath();ctx.arc(x,y-4,2.2+hash(seed)*1.5,0,Math.PI*2);ctx.fill();ctx.fillStyle=muted?'#17201c':'#232b20';ctx.fillRect(x-.55,y-3,1.1,4);}
+  function districtColor(t,f=1){const palette={Mitte:'#8c8172',Kreuzberg:'#766e62','Friedrichshain':'#806b5c','Prenzlauer Berg':'#8d7967',Charlottenburg:'#777d73',Schöneberg:'#7b756b',Neukölln:'#70685f',Tempelhof:'#747166',Pankow:'#718071',Spandau:'#68746d',Lichtenberg:'#6f756c',Köpenick:'#65766b'};return shade(palette[t.district]||'#74766c',f);}
+  function cityGround(sx,sy,hw,hh,t,seed){
+    const seen=t.seen,muted=!seen;
+    if(t.terrain==='water'||t.terrain==='bridge'){
+      diamond(sx,sy,hw,hh,muted?'#122329':'#244650',muted?'rgba(41,77,84,.25)':'rgba(104,157,169,.42)');
+      ctx.strokeStyle=muted?'rgba(60,99,107,.18)':'rgba(135,190,198,.38)';ctx.lineWidth=1;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(sx-hw*.75,sy+i*3);ctx.quadraticCurveTo(sx,sy+i*3-2,sx+hw*.75,sy+i*3);ctx.stroke();}
+      if(t.terrain==='bridge'){ctx.strokeStyle=muted?'#343c39':'#77766b';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(sx-hw,sy);ctx.lineTo(sx+hw,sy);ctx.stroke();ctx.strokeStyle='#262b28';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);}return;
+    }
+    const base=t.terrain==='park'?(muted?'#17251c':'#354b30'):(t.terrain==='forest'?(muted?'#111b16':'#263b2b'):(muted?'#151d1b':'#303733'));diamond(sx,sy,hw,hh,base,seen?'rgba(136,129,94,.25)':'rgba(60,70,63,.18)');
+    const iw=hw*.77,ih=hh*.72;diamond(sx,sy,iw,ih,t.terrain==='park'?(muted?'#1d2e22':'#49613c'):(t.terrain==='forest'?(muted?'#16231b':'#304a34'):(muted?'#232b27':'#595b4d')),'transparent');
+    if(t.terrain==='park'){ctx.strokeStyle=muted?'rgba(92,105,78,.16)':'rgba(194,181,127,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(sx-hw*.7,sy+hh*.2);ctx.quadraticCurveTo(sx,sy-hh*.4,sx+hw*.72,sy+hh*.15);ctx.stroke();}
+    if(t.road){const vertical=t.road==='ns'||(t.road==='ring'&&Math.abs(t.x-25.5)>Math.abs(t.y-25.5));ctx.strokeStyle=muted?'#242b29':'#444944';ctx.lineWidth=t.road==='ring'?6:5;ctx.beginPath();if(vertical){ctx.moveTo(sx,sy-hh);ctx.lineTo(sx,sy+hh);}else{ctx.moveTo(sx-hw,sy);ctx.lineTo(sx+hw,sy);}ctx.stroke();ctx.strokeStyle=muted?'rgba(95,98,83,.12)':'rgba(205,185,111,.38)';ctx.lineWidth=.8;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);}
+    if(t.rail){ctx.strokeStyle=muted?'#202725':'#303632';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx-hw*.9,sy-hh*.45);ctx.lineTo(sx+hw*.9,sy+hh*.45);ctx.stroke();ctx.strokeStyle=muted?'#343b37':'#6f6a58';ctx.lineWidth=.7;for(let i=-.7;i<.8;i+=.22){ctx.beginPath();ctx.moveTo(sx+i*hw-2,sy+i*hh*.5+1);ctx.lineTo(sx+i*hw+2,sy+i*hh*.5-1);ctx.stroke();}}
     if(seen&&hash(seed+9)>.55){ctx.fillStyle=hash(seed+10)>.5?'#743e35':'#58605a';ctx.fillRect(sx+hw*.72,sy-2,5,2.5);ctx.fillStyle='#171c1a';ctx.fillRect(sx+hw*.73,sy-2.5,1,3.5);}
   }
 
-  function fogCity(sx,sy,seed){
-    const count=2+Math.floor(hash(seed)*3);for(let i=0;i<count;i++){const ox=(hash(seed+i*7)-.5)*25,oy=(hash(seed+i*11)-.5)*6;microBuilding(sx+ox,sy+oy,3.5+hash(seed+i)*3,2+hash(seed+i+1)*1.5,5+hash(seed+i+2)*16,'#202a26',seed+i,false);}
+  function fogCity(sx,sy,t,seed){
+    if(t.terrain==='water'||t.terrain==='bridge')return;if(t.landmark){ctx.save();ctx.globalAlpha=.42;landmarkLot(sx,sy,t,seed);ctx.restore();return;}const overview=cam.worldZoom<.65;if(t.terrain==='park'||t.terrain==='forest'){const trees=overview?2:(t.terrain==='forest'?9:6);for(let i=0;i<trees;i++)cityTree(sx+(hash(seed+i*9)-.5)*28,sy+(hash(seed+i*13)-.5)*9,seed+i,true);return;}
+    const count=overview?1:(t.density==='core'?5:t.density==='inner'?4:2);for(let i=0;i<count;i++){const ox=overview?0:(hash(seed+i*7)-.5)*25,oy=overview?0:(hash(seed+i*11)-.5)*6;microBuilding(sx+ox,sy+oy,overview?4.2:3.5+hash(seed+i)*3,overview?2.4:2+hash(seed+i+1)*1.5,6+hash(seed+i+2)*(t.density==='core'?25:16),'#202a26',seed+i,false);}
   }
+
+  function landmarkLot(sx,sy,t,seed){const kind=t.landmark?.kind;if(!kind)return false;const c='#a49a7d';if(kind==='tower'){ctx.strokeStyle='#a7aaa0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx,sy+2);ctx.lineTo(sx,sy-31);ctx.stroke();ctx.fillStyle='#8e9b8d';ctx.beginPath();ctx.arc(sx,sy-20,4.5,0,Math.PI*2);ctx.fill();}else if(kind==='gate'){for(let i=-2;i<=2;i++){ctx.fillStyle=c;ctx.fillRect(sx+i*4-1,sy-13,2,13);}ctx.fillRect(sx-11,sy-15,22,3);ctx.beginPath();ctx.moveTo(sx-12,sy-15);ctx.lineTo(sx,sy-20);ctx.lineTo(sx+12,sy-15);ctx.fill();}else if(kind==='dome'){microBuilding(sx,sy,10,5,13,c,seed);ctx.strokeStyle='#abb0a1';ctx.beginPath();ctx.arc(sx,sy-15,6,Math.PI,0);ctx.stroke();}else if(kind==='station'){microBuilding(sx,sy,13,5,11,'#7b8580',seed);ctx.strokeStyle='#aeb9b0';for(let i=-8;i<=8;i+=4){ctx.beginPath();ctx.arc(sx+i,sy-12,4,Math.PI,0);ctx.stroke();}}else if(kind==='airfield'){ctx.fillStyle='#5e665a';ctx.fillRect(sx-17,sy-2,34,4);ctx.strokeStyle='#c4bd96';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(sx-15,sy);ctx.lineTo(sx+15,sy);ctx.stroke();ctx.setLineDash([]);}else if(kind==='wall'){ctx.fillStyle='#847861';ctx.fillRect(sx-16,sy-9,32,7);ctx.fillStyle='#9b463e';for(let i=-13;i<14;i+=7)ctx.fillRect(sx+i,sy-8,4,2);}else{microBuilding(sx,sy,10,5,18,c,seed);}return true;}
 
   function cityLot(sx,sy,t,color){
     const seed=t.x*97+t.y*193,rooms=t.rooms||4;
     if(t.home){microBuilding(sx,sy-2,9,4.5,24,'#b39343',seed);microBuilding(sx-10,sy+3,6,3,11,'#736b48',seed+1);microBuilding(sx+10,sy+3,6,3,13,'#736b48',seed+2);ctx.strokeStyle='#c6a84c';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(sx-19,sy+2);ctx.lineTo(sx,sy+11);ctx.lineTo(sx+19,sy+2);ctx.stroke();return;}
-    const count=Math.min(5,2+Math.floor(rooms/3)),spots=[[-9,-2],[4,-4],[-2,3],[10,2],[-12,4]];
-    for(let i=0;i<count;i++){const [ox,oy]=spots[i],height=6+hash(seed+i*13)*Math.min(27,10+rooms*.8);microBuilding(sx+ox,sy+oy,4+hash(seed+i)*3,2.2+hash(seed+i+5)*1.8,height,shade(color,.78+hash(seed+i+8)*.25),seed+i,true);}
-    ctx.fillStyle='#4d633b';for(let i=0;i<2;i++){const ox=(hash(seed+40+i)-.5)*25,oy=4+hash(seed+50+i)*4;ctx.beginPath();ctx.arc(sx+ox,sy+oy-3,2.3,0,Math.PI*2);ctx.fill();}if(hash(seed+70)>.76)tank(sx+8,sy-9,2.8,8,'#596560');
+    if(t.terrain==='water')return;if(t.terrain==='bridge'){if(hash(seed)>.6)tank(sx+5,sy-5,2.4,7,'#596560');return;}if(t.terrain==='park'||t.terrain==='forest'){const trees=t.terrain==='forest'?10:7;for(let i=0;i<trees;i++)cityTree(sx+(hash(seed+i*9)-.5)*27,sy+(hash(seed+i*13)-.5)*9,seed+i);if(t.terrain==='forest'&&hash(seed)>.78)microBuilding(sx+4,sy,4,2,7,'#585a4d',seed);return;}if(landmarkLot(sx,sy,t,seed))return;
+    const density=t.density==='core'?2:t.density==='inner'?1:0,count=Math.min(6,2+density+Math.floor(rooms/4)),spots=[[-9,-2],[4,-4],[-2,3],[10,2],[-12,4],[13,-3]];
+    for(let i=0;i<count;i++){const [ox,oy]=spots[i],height=7+density*5+hash(seed+i*13)*Math.min(31,10+rooms*.8);microBuilding(sx+ox,sy+oy,4+hash(seed+i)*3,2.2+hash(seed+i+5)*1.8,height,districtColor(t,.8+hash(seed+i+8)*.22),seed+i,true);}
+    ctx.fillStyle='#4d633b';for(let i=0;i<(t.density==='outer'?3:1);i++){const ox=(hash(seed+40+i)-.5)*25,oy=4+hash(seed+50+i)*4;ctx.beginPath();ctx.arc(sx+ox,sy+oy-3,2.3,0,Math.PI*2);ctx.fill();}if(hash(seed+70)>.78)tank(sx+8,sy-9,2.8,8,'#596560');
   }
+
+  function cityInfrastructure(sx,sy,hw,hh,t){if(t.terrain==='water')return;if(t.road){const vertical=t.road==='ns'||(t.road==='ring'&&Math.abs(t.x-25.5)>Math.abs(t.y-25.5));ctx.strokeStyle=t.seen?'rgba(216,190,112,.58)':'rgba(137,132,94,.34)';ctx.lineWidth=t.road==='ring'?1.8:1.25;ctx.beginPath();if(vertical){ctx.moveTo(sx,sy-hh);ctx.lineTo(sx,sy+hh);}else{ctx.moveTo(sx-hw,sy);ctx.lineTo(sx+hw,sy);}ctx.stroke();}if(t.rail){ctx.strokeStyle=t.seen?'rgba(165,139,102,.68)':'rgba(99,94,76,.36)';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(sx-hw*.9,sy-hh*.45);ctx.lineTo(sx+hw*.9,sy+hh*.45);ctx.stroke();ctx.setLineDash([]);}}
+  function citySignsOfLife(sx,sy,t,seed){if(!['urban','bridge'].includes(t.terrain))return;const smoke=hash(seed+121);if(smoke>.982){const h=10+hash(seed+122)*14;ctx.strokeStyle=t.seen?'rgba(116,122,112,.56)':'rgba(62,75,69,.38)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+5,sy-8);ctx.bezierCurveTo(sx+2,sy-h*.45,sx+9,sy-h*.72,sx+5,sy-h);ctx.stroke();ctx.fillStyle=t.seen?'rgba(126,79,43,.82)':'rgba(73,53,38,.52)';ctx.beginPath();ctx.arc(sx+5,sy-7,1.8,0,Math.PI*2);ctx.fill();}if(t.seen&&hash(seed+140)>.88){ctx.fillStyle='#a89151';ctx.fillRect(sx-1,sy+3,1.2,1.2);ctx.fillRect(sx+3,sy+1,1.2,1.2);}}
 
   function renderWorld(map) {
     ctx.clearRect(0, 0, W, H);
@@ -324,15 +344,19 @@ export function createView(canvas) {
 
     worldPlacements = [];
     for (const t of [...map.tiles].sort((a, b) => (a.x + a.y) - (b.x + b.y))) {
-      const [ox, oy] = isoXY(t.y - map.player.y, t.x - map.player.x);
+      const [ox, oy] = isoXY(t.y - (map.world.h+1)/2, t.x - (map.world.w+1)/2);
       const sx = originX + ox * WS, sy = originY + oy * WS;
       worldPlacements.push({ t, sx, sy });
+      const screenX=W/2+(sx-W/2)*cam.worldZoom,screenY=H/2+(sy-H/2)*cam.worldZoom;
+      if(screenX<-55||screenX>W+55||screenY<-70||screenY>H+70)continue;
 
       const seed = t.x * 97 + t.y * 193;
-      cityGround(sx, sy, hw, hh, t.seen, seed);
+      cityGround(sx, sy, hw, hh, t, seed);
 
       if (!t.seen) {                                   // fog
-        fogCity(sx, sy, seed);
+        fogCity(sx, sy, t, seed);
+        cityInfrastructure(sx,sy,hw,hh,t);
+        citySignsOfLife(sx,sy,t,seed);
         if (t.scoutable) {                             // the frontier — click to explore
           ctx.save(); ctx.setLineDash([3, 2]);
           ctx.beginPath(); ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();
@@ -343,32 +367,36 @@ export function createView(canvas) {
 
       const color = t.home ? '#ffd15a' : cityColor(t.name);
       cityLot(sx, sy, t, color);
+      cityInfrastructure(sx,sy,hw,hh,t);
+      citySignsOfLife(sx,sy,t,seed);
       if (!t.home && (t.rooms || 0) > 12) {
         ctx.fillStyle = '#9e332f'; ctx.beginPath(); ctx.arc(sx + hw * .72, sy - 4, 2.2, 0, Math.PI * 2); ctx.fill();
       }
     }
 
+    ctx.textAlign='center';for(const {t,sx,sy} of worldPlacements){if(!t.districtHub)continue;ctx.font='bold 14px system-ui, sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(4,9,8,.78)';ctx.strokeText(t.districtHub,sx,sy+5);ctx.fillStyle=t.seen?'rgba(226,215,177,.82)':'rgba(133,151,133,.48)';ctx.fillText(t.districtHub,sx,sy+5);}
+
     // labels last, above the skyline
     ctx.textAlign = 'center';
     for (const { t, sx, sy } of worldPlacements) {
       if (!t.seen) continue;
-      const label = t.home ? '★ ' + t.name : shortName(t.name);
-      ctx.font = (t.home ? 'bold 11px ' : '10px ') + 'system-ui, sans-serif';
+      const label = t.home ? '★ ' + t.name : (t.landmark ? t.landmark.name : shortName(t.name));
+      ctx.font = (t.home || t.landmark ? 'bold 11px ' : '10px ') + 'system-ui, sans-serif';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.65)';
       ctx.strokeText(label, sx, sy + 15);
-      ctx.fillStyle = t.home ? '#fff' : '#e8dcc4';
+      ctx.fillStyle = t.home ? '#fff' : (t.landmark ? '#e8cc82' : '#e8dcc4');
       ctx.fillText(label, sx, sy + 15);
     }
 
     for (const squad of (map.squads || (map.squad ? [map.squad] : []))) {
       const here = worldPlacements.find((p) => p.t.x === squad.x && p.t.y === squad.y);
       const target = squad.traveling ? worldPlacements.find((p) => p.t.x === squad.targetX && p.t.y === squad.targetY) : null;
-      let markerX=here?.sx,markerY=here?.sy-13;
+      let markerX=here?.sx,markerY=here?.sy;
       if (here && target) {
         const duration=Math.max(1,squad.arrivesAt-squad.startedAt),progress=Math.max(0,Math.min(1,(Date.now()/1000-squad.startedAt)/duration));
-        markerX=here.sx+(target.sx-here.sx)*progress;markerY=here.sy-13+(target.sy-here.sy)*progress;
-        const active=squad.id===map.squad?.id;ctx.strokeStyle=active?'rgba(235,205,91,.7)':'rgba(125,175,190,.55)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(here.sx,here.sy-13);ctx.lineTo(target.sx,target.sy-13);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=active?'#d7bf55':'#7fabb5';ctx.strokeRect(target.sx-7,target.sy-20,14,14);
-        for(let i=1;i<=3;i++){const p=Math.max(0,progress-i*.045);ctx.fillStyle=active?`rgba(215,191,85,${.42-i*.09})`:`rgba(120,175,190,${.42-i*.09})`;ctx.beginPath();ctx.arc(here.sx+(target.sx-here.sx)*p,here.sy-13+(target.sy-here.sy)*p,2,0,Math.PI*2);ctx.fill();}
+        markerX=here.sx+(target.sx-here.sx)*progress;markerY=here.sy+(target.sy-here.sy)*progress;
+        const active=squad.id===map.squad?.id;ctx.strokeStyle=active?'rgba(235,205,91,.7)':'rgba(125,175,190,.55)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(here.sx,here.sy);ctx.lineTo(target.sx,target.sy);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=active?'#d7bf55':'#7fabb5';ctx.strokeRect(target.sx-7,target.sy-7,14,14);
+        for(let i=1;i<=3;i++){const p=Math.max(0,progress-i*.045);ctx.fillStyle=active?`rgba(215,191,85,${.42-i*.09})`:`rgba(120,175,190,${.42-i*.09})`;ctx.beginPath();ctx.arc(here.sx+(target.sx-here.sx)*p,here.sy+(target.sy-here.sy)*p,2,0,Math.PI*2);ctx.fill();}
       }
       if (Number.isFinite(markerX)&&Number.isFinite(markerY)) { const active=squad.id===map.squad?.id;ctx.fillStyle=active?(squad.traveling?'#ffd75a':'#eef0c6'):'#83b4bf';ctx.beginPath();ctx.arc(markerX,markerY,active?7:6,0,Math.PI*2);ctx.fill();ctx.strokeStyle=active?'#ffe07b':'#18211c';ctx.lineWidth=active?2.5:2;ctx.stroke();ctx.fillStyle='#18211c';ctx.font='bold 8px system-ui';ctx.textAlign='center';ctx.fillText((squad.name||'S')[0],markerX,markerY+3);ctx.font='9px system-ui';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(squad.name,markerX,markerY-10);ctx.fillStyle=active?'#ffe28a':'#b8d4d7';ctx.fillText(squad.name,markerX,markerY-10); }
     }
@@ -377,8 +405,8 @@ export function createView(canvas) {
     const seen = map.tiles.filter((t) => t.seen).length;
     ctx.textAlign = 'left';
     ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('The Wasteland', 17, 31);
-    ctx.fillStyle = '#f4ead2'; ctx.fillText('The Wasteland', 16, 30);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('Berlin Exclusion Zone', 17, 31);
+    ctx.fillStyle = '#f4ead2'; ctx.fillText('Berlin Exclusion Zone', 16, 30);
     ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = '#d9c9a8';
     ctx.fillText(`${map.squad?.name||'Squad'} selected · ${seen} of ${map.tiles.length} places known nearby · click a dashed tile to explore`, 16, 48);
   }
@@ -408,6 +436,6 @@ export function createView(canvas) {
   function setSelected(slot) { selected = slot; }
 
   function setZoom(value){cam.zoom=Math.max(.55,Math.min(1.7,value));}
-  function setWorldZoom(value){cam.worldZoom=Math.max(.55,Math.min(2.2,value));}
+  function setWorldZoom(value){cam.worldZoom=Math.max(.42,Math.min(2.2,value));}
   return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setZoom, setWorldZoom };
 }

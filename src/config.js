@@ -46,7 +46,7 @@ const _FAC = [
   [13,'staff_area','core','Staff area','Aufenthaltsraum'],
   [14,'heritage_room','special','Heritage Room','Ahnensaal'],
   [15,'chem_lab','research','Chemical laboratory','Chemielabor'],
-  [16,'medical_center','medical','Medical center','Krankenstation'],
+  [16,'medical_center','medical','Hospital','Krankenhaus'],
   [17,'headquarters','core','Headquarters','Hauptquartier'],
   [18,'radio_tower','special','Radio tower','Funkturm'],
   [19,'decryption_room','research','Decryption room','Entschlüsselungsraum'],

@@ -19,6 +19,7 @@ import { createToolshop } from './toolshop.js';
 import { createForces } from './forces.js';
 
 const SAVE_KEY = 'zv2.userid';   // remembers the player so a reload resumes the game
+const WORLD_RADIUS = 25;         // full 50x50 city overview; fog still protects undiscovered content
 
 const canvas = document.getElementById('game');
 const statusEl = document.getElementById('status');
@@ -106,12 +107,12 @@ const inventory = createInventory(document.getElementById('inventory'), {
     }
   },
 });
-const admin = createAdmin(document.getElementById('admin'), { onAction: async (action) => { try { const r=await postAdmin(action); admin.show(); await load(); if(mode==='world') { worldState=await getMap(12,activeSquadId); requestRender(); } setStatus(r.message); } catch(e) { admin.show(); setStatus(e.message,true); } } });
+const admin = createAdmin(document.getElementById('admin'), { onAction: async (action) => { try { const r=await postAdmin(action); admin.show(); await load(); if(mode==='world') { worldState=await getMap(WORLD_RADIUS,activeSquadId); requestRender(); } setStatus(r.message); } catch(e) { admin.show(); setStatus(e.message,true); } } });
 const research = createResearch(document.getElementById('research'), { onStart: async (tech) => { try { const r=await postResearch(tech); research.show(await getResearch()); setStatus(r.message); } catch(e) { setStatus(e.message,true); research.show(await getResearch()); } } });
 const toolshop = createToolshop(document.getElementById('toolshop'), { onProduce: async (recipe) => { try { const r=await postCraft(recipe); toolshop.show(await getInventory()); setStatus(r.message); } catch(e) { setStatus(e.message,true); toolshop.show(await getInventory()); } } });
 const forces = createForces(document.getElementById('forces'), {
-  onSelect: async (id) => { activeSquadId=id; try { worldState=await getMap(12,id); requestRender(); forces.show(await getForces(),id); setStatus(`${worldState.squad.name} selected for deployment.`); } catch(e){setStatus(e.message,true);} },
-  onAction: async (action,survivor,squad,focus) => { try { const r=await postForces(action,survivor,squad,focus); forces.show(await getForces(),activeSquadId); if(mode==='world'){worldState=await getMap(12,activeSquadId);requestRender();}setStatus(r.message); } catch(e){setStatus(e.message,true);forces.show(await getForces(),activeSquadId);} }
+  onSelect: async (id) => { activeSquadId=id; try { worldState=await getMap(WORLD_RADIUS,id); requestRender(); forces.show(await getForces(),id); setStatus(`${worldState.squad.name} selected for deployment.`); } catch(e){setStatus(e.message,true);} },
+  onAction: async (action,survivor,squad,focus,item) => { try { const r=await postForces(action,survivor,squad,focus,item); forces.show(await getForces(),activeSquadId); if(mode==='world'){worldState=await getMap(WORLD_RADIUS,activeSquadId);requestRender();}setStatus(r.message); } catch(e){setStatus(e.message,true);forces.show(await getForces(),activeSquadId);} }
 });
 const start = createStart(document.getElementById('start'), {
   onNewGame: newGame,
@@ -244,7 +245,7 @@ setInterval(() => { if (playing && forces.isOpen()) getForces().then((d) => forc
 setInterval(async () => {
   if (!playing || mode !== 'world' || !worldState?.squad?.traveling) return;
   try {
-    worldState = await getMap(12,activeSquadId); requestRender();
+    worldState = await getMap(WORLD_RADIUS,activeSquadId); requestRender();
     const sq=worldState.squad;
     if (sq.traveling) setStatus(`Squad traveling to ${sq.targetX}|${sq.targetY} · ${Math.max(0,sq.arrivesAt-Math.floor(Date.now()/1000))}s`);
     else setStatus(sq.lastEvent || `${sq.name} arrived at ${sq.x}|${sq.y}.`);
@@ -260,12 +261,12 @@ async function setMode(m) {
   activePlace = null;
   zoomControls.classList.remove('hidden');
   if (m === 'world' && !worldState) {
-    try { worldState = await getMap(12,activeSquadId); if(!activeSquadId)activeSquadId=worldState.squad.id; }
+    try { worldState = await getMap(WORLD_RADIUS,activeSquadId); if(!activeSquadId)activeSquadId=worldState.squad.id; }
     catch (e) { setStatus('map load failed: ' + e.message, true); }
   }
   modeBtn.textContent = m === 'world' ? '🏠 Compound' : '🗺 World map';
   setStatus(m === 'world'
-    ? 'the wasteland · drag to pan'
+    ? 'Berlin exclusion zone · drag to pan and zoom'
     : (getSource() === 'mock' ? 'mock data (API offline) · drag to pan' : 'live · drag to pan'));
   requestRender();
 }
@@ -330,7 +331,7 @@ async function onWorldClick(x, y) {
   if (squad?.traveling) { setStatus(`Squad already traveling · ${Math.max(0,squad.arrivesAt-Math.floor(Date.now()/1000))}s remaining`,true); return; }
   if (t.seen) {
     if (!squad || squad.x !== t.x || squad.y !== t.y) {
-      try { const r=await postScout(t.x,t.y,activeSquadId); worldState=await getMap(12,activeSquadId); requestRender(); setStatus(r.message); } catch(err) { setStatus(err.message,true); } return;
+      try { const r=await postScout(t.x,t.y,activeSquadId); worldState=await getMap(WORLD_RADIUS,activeSquadId); requestRender(); setStatus(r.message); } catch(err) { setStatus(err.message,true); } return;
     }
     if (t.home) { setStatus(`${t.name} — squad is home (${t.x}|${t.y})`); return; }
     setStatus(`Entering ${t.name}…`);
@@ -347,7 +348,7 @@ async function onWorldClick(x, y) {
   setStatus('Scouting…');
   try {
     const r = await postScout(t.x, t.y, activeSquadId);
-    worldState = await getMap(12,activeSquadId);
+    worldState = await getMap(WORLD_RADIUS,activeSquadId);
     requestRender();
     setStatus(`${r.message} · ${r.travel.seconds}s`);
   } catch (err) {

@@ -180,7 +180,7 @@ CREATE TABLE `facilities` (
 
 LOCK TABLES `facilities` WRITE;
 /*!40000 ALTER TABLE `facilities` DISABLE KEYS */;
-INSERT INTO `facilities` VALUES (1,'Life support','Keeps water and air usable.',10),(2,'Scrapyard','Recovers wood and metal from ruins.',10),(3,'Garage','Maintains vehicles and produces fuel.',10),(4,'Storage','Protects scavenged supplies.',10),(8,'Fortifications','Walls, traps and firing positions.',10),(9,'Power generator','Produces electricity for the compound.',10),(10,'Troop quarters','Houses and equips defenders.',10),(11,'Toolshop','Builds weapons, tools, medicine and compound defenses.',10),(12,'Research center','Studies the infection and old technology.',10),(16,'Medical center','Treats wounds and disease.',10),(17,'Headquarters','Coordinates the survivor settlement.',10),(18,'Radio tower','Searches the wasteland for signals.',10);
+INSERT INTO `facilities` VALUES (1,'Life support','Keeps water and air usable.',10),(2,'Scrapyard','Recovers wood and metal from ruins.',10),(3,'Garage','Maintains vehicles and produces fuel.',10),(4,'Storage','Protects scavenged supplies.',10),(8,'Fortifications','Walls, traps and firing positions.',10),(9,'Power generator','Produces electricity for the compound.',10),(10,'Troop quarters','Houses and equips defenders.',10),(11,'Toolshop','Builds weapons, tools, medicine and compound defenses.',10),(12,'Research center','Studies the infection and old technology.',10),(16,'Hospital','Treats critical squad casualties and restores them to duty.',10),(17,'Headquarters','Coordinates the survivor settlement.',10),(18,'Radio tower','Searches the wasteland for signals.',10);
 /*!40000 ALTER TABLE `facilities` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -240,6 +240,36 @@ LOCK TABLES `facility_positions` WRITE;
 /*!40000 ALTER TABLE `facility_positions` DISABLE KEYS */;
 INSERT INTO `facility_positions` VALUES (5,1,0,0),(5,2,1,0),(5,3,2,0),(5,8,3,0),(5,17,3,3),(5,9,4,0),(5,16,5,0),(15,1,0,0),(15,17,3,3),(16,1,2,4),(16,17,3,3),(17,9,0,0),(17,12,1,2),(17,3,2,1),(17,11,2,4),(17,17,3,3),(17,1,4,1),(17,8,6,0),(18,12,0,0),(18,17,3,3),(19,11,0,0),(19,12,0,1),(19,17,3,3),(20,10,0,0),(20,17,3,3),(21,10,0,0),(21,17,3,3),(22,17,3,3);
 /*!40000 ALTER TABLE `facility_positions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `hospital_treatments`
+--
+
+DROP TABLE IF EXISTS `hospital_treatments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `hospital_treatments` (
+  `survivor_id` int(10) unsigned NOT NULL,
+  `userid` int(10) unsigned NOT NULL,
+  `started_at` int(11) NOT NULL,
+  `due` int(11) NOT NULL,
+  `soldier_level` int(11) NOT NULL,
+  `hospital_level` int(11) NOT NULL,
+  PRIMARY KEY (`survivor_id`),
+  KEY `userid` (`userid`),
+  CONSTRAINT `hospital_treatments_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hospital_treatments_ibfk_2` FOREIGN KEY (`survivor_id`) REFERENCES `survivors` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `hospital_treatments`
+--
+
+LOCK TABLES `hospital_treatments` WRITE;
+/*!40000 ALTER TABLE `hospital_treatments` DISABLE KEYS */;
+/*!40000 ALTER TABLE `hospital_treatments` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -707,6 +737,33 @@ LOCK TABLES `squad_members` WRITE;
 /*!40000 ALTER TABLE `squad_members` DISABLE KEYS */;
 INSERT INTO `squad_members` VALUES (1,1),(1,2),(2,31),(2,32),(2,33),(3,34),(3,35),(3,36),(4,37),(4,38),(4,39),(5,40),(5,41),(5,42),(6,44),(6,45),(7,47),(7,48),(8,46),(9,49),(9,50),(10,52),(10,53),(10,54);
 /*!40000 ALTER TABLE `squad_members` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `squad_equipment`
+--
+
+DROP TABLE IF EXISTS `squad_equipment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `squad_equipment` (
+  `squad_id` int(10) unsigned NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `amount` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`squad_id`,`item_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `squad_equipment_ibfk_1` FOREIGN KEY (`squad_id`) REFERENCES `squads` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `squad_equipment_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `squad_equipment`
+--
+
+LOCK TABLES `squad_equipment` WRITE;
+/*!40000 ALTER TABLE `squad_equipment` DISABLE KEYS */;
+/*!40000 ALTER TABLE `squad_equipment` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
