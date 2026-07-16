@@ -1,0 +1,15 @@
+<?php
+require __DIR__ . '/_bootstrap.php'; global $db;
+$uid=api_require_user(); $slot=(int)($_GET['slot']??0); if($slot<1||$slot>45)json_err('bad_slot','slot must be 1..45');
+zv2_refresh($uid);
+$r=$db->query('SELECT buildings,ressis FROM strongholds WHERE userid='.$uid.' LIMIT 1');if(!$r||!$r->num_rows)json_err('no_stronghold','Stronghold not found.',404);
+$hold=$r->fetch_assoc();$levels=pipe_nums($hold['buildings']);$ownedRes=pipe_nums($hold['ressis']);$level=(int)($levels[$slot]??0);$building=null;$activeBuilds=zv2_active_builds($uid);
+foreach($activeBuilds as$b)if($b['slot']===$slot){$building=['due'=>$b['due'],'toLevel'=>$b['toLevel']];break;}
+$fr=$db->query('SELECT name,description,maxlevel FROM facilities WHERE id='.$slot.' LIMIT 1');
+$fac=($fr&&$fr->num_rows)?$fr->fetch_assoc():['name'=>'Facility '.$slot,'description'=>'Not yet available.','maxlevel'=>0];
+$max=(int)$fac['maxlevel'];$atMax=$max===0||$level>=$max;$next=$level+1;$cost=[];
+if(!$atMax){$cr=$db->query("SELECT water,food,wood,metal,petrol FROM facility_costs WHERE facility_id=$slot AND level=$next LIMIT 1");if($cr&&$cr->num_rows){$c=$cr->fetch_assoc();foreach(['water','food','wood','metal','petrol']as$i=>$key)if((int)$c[$key]>0)$cost[]=['res'=>$key,'amount'=>(int)$c[$key],'owned'=>(int)floor($ownedRes[$i]??0),'enough'=>($ownedRes[$i]??0)>=(int)$c[$key]];}}
+$canAfford=!array_filter($cost,fn($c)=>!$c['enough']);$canUpgrade=!$atMax&&!$activeBuilds&&$canAfford;$upgradeReason=$atMax?'Maximum level reached.':($activeBuilds?'Another construction project is active.':(!$canAfford?'Missing resources.':''));
+$capacity=min(3,max(1,(int)ceil(max(1,$level)/2)));$staff=[];$sq=$db->query("SELECT s.id,s.name,s.hp,s.max_hp,s.fatigue,s.job_facility,f.name job_name FROM survivors s LEFT JOIN facilities f ON f.id=s.job_facility WHERE s.userid=$uid ORDER BY s.id");while($sq&&($sv=$sq->fetch_assoc()))$staff[]=['id'=>(int)$sv['id'],'name'=>$sv['name'],'hp'=>(int)$sv['hp'],'maxHp'=>(int)$sv['max_hp'],'fatigue'=>round((float)$sv['fatigue']),'jobFacility'=>$sv['job_facility']===null?null:(int)$sv['job_facility'],'job'=>$sv['job_name'],'available'=>(int)$sv['hp']>0&&(float)$sv['fatigue']<90];
+$effects=[1=>'Boosts water and food production by 25% per worker.',2=>'Boosts wood and metal production.',3=>'Boosts fuel production.',8=>'Adds survivor combat skill to raid defence.',9=>'Adds 3 power generation per worker.',10=>'Unlocks additional squads and training slots for reserve survivors.',11=>'Technicians reduce Toolshop production time by 15% each.',12=>'Scientists generate research points.',16=>'Passively heals resting survivors.',17=>'Coordinates stronghold defence.'];
+json_out(['ok'=>true,'slot'=>$slot,'type'=>$slot,'name'=>$fac['name'],'description'=>$fac['description'],'level'=>$level,'maxLevel'=>$max,'atMax'=>$atMax,'canUpgrade'=>$canUpgrade,'upgradeReason'=>$upgradeReason,'nextLevel'=>$atMax?null:$next,'nextCost'=>$cost,'nextReq'=>[],'building'=>$building,'staffing'=>['capacity'=>$capacity,'effect'=>$effects[$slot]??'Assigned survivors keep this facility operational.','survivors'=>$staff]]);

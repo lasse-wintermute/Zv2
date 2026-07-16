@@ -1,0 +1,43 @@
+# Zv2 roadmap
+
+## Current playable slice
+
+- Standalone `zv2` database and project-local mechanics
+- New survivor and persistent session
+- Resource-producing isometric stronghold
+- Facility upgrades with construction timers
+- 50×50 wasteland, fog of war and frontier exploration
+- Discovered buildings with rooms, infected and loot
+- Persistent three-person survivor squad with health, attack, defense and equipment
+- Round-based room combat with survivor choice, weapon damage, retaliation and injuries
+- Full squad/stash overlay for equipping weapons and using healing supplies
+- Ammunition consumption, persistent weapon condition, field repairs and tactical retreat
+- Server-authoritative workshop with technology-gated material recipes
+- Survivor facility assignments with real production, power, crafting, healing, and defence effects
+- Persistent jobs, expedition availability, work/combat fatigue, and rest recovery
+- Accelerated day/night cycle, rising zombie threat, automatic raids, breaches, and injuries
+- “Breach & Clear” building runs with sequential hidden-room discovery
+- Entry approaches (Listen, Search, Kick door), tactical combat stances, intel, momentum, and supply-cache rewards
+- Timed squad travel with persistent world position and facility-worker exclusion from raiding crews
+- Resource-aware disabled upgrade/crafting controls and a temporary testing Admin menu
+- Action Points removed from UI, APIs, gameplay rules, and storage
+- Seven-branch, 28-node technology tree adapted from the original Z progression
+- Timed research, Research Center staffing, research-point generation, prerequisites, and gameplay unlocks
+- Placeable Toolshop with 20 research- and facility-level-gated production plans
+- Timed one-item production queue, technician speed bonuses, and crafted raid fortifications
+- Transfer of room salvage into the standalone inventory
+- Dynamic zombie-survival visual style with distinct facility silhouettes, fortified
+  compound walls, and dense multi-building city blocks visible beneath the fog
+
+## Next
+
+1. Add survivor progression.
+2. Add recruitable survivors and population growth.
+3. Add raid preparation choices, traps, and an interactive defence phase.
+4. Replace development resume-by-ID with real authentication.
+
+## Standalone migration
+
+Completed 2026-07-16: all runtime database connections, mechanics, onboarding,
+construction, refresh, scouting, room combat, item lookup and inventory mutation
+were moved into Zv2. Fresh games no longer read or modify any external game state.

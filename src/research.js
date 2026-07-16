@@ -1,0 +1,12 @@
+import { makeDraggable } from './draggable.js';
+const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const labels={engineering:'Engineering',survival:'Survival',medicine:'Medicine',combat:'Combat',recon:'Recon',defense:'Defense',energy:'Energy'};
+export function createResearch(el,opts={}){
+ const onStart=opts.onStart||(()=>{});const dragger=makeDraggable(el,{handle:'.research-card header',target:'.research-card',storageKey:'zv2.window.research'});
+ el.addEventListener('click',e=>{if(e.target.closest('[data-research-close]')){hide();return;}const b=e.target.closest('[data-tech]');if(b&&!b.disabled){b.disabled=true;onStart(Number(b.dataset.tech));}});
+ function hide(){el.classList.remove('open');el.innerHTML='';}
+ function isOpen(){return el.classList.contains('open');}
+ function show(d){const branches=Object.entries(d.branches||{}).map(([key,nodes])=>`<section class="tech-branch"><h3>${esc(labels[key]||key)}</h3><div class="tech-line">${nodes.map(n=>`<article class="tech-node ${n.complete?'complete':n.active?'active':n.canResearch?'available':'locked'}"><div class="tech-tier">TIER ${n.tier}</div><b>${esc(n.name)}</b><p>${esc(n.description)}</p><small>${n.cost} RP · ${n.duration}s · Center L${n.centerLevel}</small><button data-tech="${n.id}"${n.canResearch?'':' disabled'}>${n.complete?'Recovered':n.active?'Researching…':n.canResearch?'Research':esc(n.reason||'Locked')}</button></article>`).join('<i class="tech-link"></i>')}</div></section>`).join('');const job=d.job?`<div class="research-job">Recovering <b>${esc(d.job.name)}</b> · <span data-research-countdown data-due="${d.job.due}"></span></div>`:'';el.innerHTML=`<div class="research-card"><header title="Drag to move"><div><small>RECOVERED KNOWLEDGE</small><h2>Technology tree</h2></div><button data-research-close aria-label="Close">✕</button></header><div class="research-summary"><strong>${d.points} RP</strong><span>+${d.rate}/hour · ${d.workers} scientist${d.workers===1?'':'s'} · Research center L${d.centerLevel}</span></div>${d.centerLevel?job:'<div class="research-warning">Construct a Research center to begin recovering technology.</div>'}<div class="tech-tree">${branches}</div></div>`;el.classList.add('open');dragger.restore();tick();}
+ function tick(){const c=el.querySelector('[data-research-countdown]');if(!c)return;const seconds=Math.max(0,Number(c.dataset.due)-Math.floor(Date.now()/1000));c.textContent=seconds?`${seconds}s remaining`:'finishing…';}
+ setInterval(tick,1000);return{show,hide,isOpen};
+}
