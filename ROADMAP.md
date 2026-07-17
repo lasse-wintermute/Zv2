@@ -5,6 +5,10 @@
 - Standalone `zv2` database and project-local mechanics
 - New survivor and persistent session
 - Resource-producing isometric stronghold
+- Faster early-game economy with higher base gathering, a tapering eight-hour starter
+  multiplier, and permanent production bonuses from resource-facility levels
+- Persistent ten-step Field Manual adapted from the original Z onboarding, with
+  objective validation, contextual highlights, skip and restart controls
 - Facility upgrades with construction timers
 - 50×50 wasteland, fog of war and frontier exploration
 - Discovered buildings with rooms, infected and loot
@@ -39,14 +43,15 @@
 - Hidden named recruits distributed across the city and Troop Quarter training
 - Dynamic zombie-survival visual style with distinct facility silhouettes, fortified
   compound walls, and dense multi-building city blocks visible beneath the fog
+- Garage-restored expedition vehicles with fuel consumption, passenger limits, per-squad
+  assignment, faster travel, extra cargo capacity, refuelling, and seat/cargo upgrades
 
 ## Next
 
 1. Add survivor experience, traits, relationships and permanent injuries.
-2. Add vehicles, fuel, passenger seats and cargo upgrades.
-3. Add raid preparation choices, traps, and an interactive defence phase.
-4. Add factions, reputation and consequential city events.
-5. Replace development resume-by-ID with real authentication.
+2. Add raid preparation choices, traps, and an interactive defence phase.
+3. Add factions, reputation and consequential city events.
+4. Replace development resume-by-ID with real authentication.
 
 ## Standalone migration
 

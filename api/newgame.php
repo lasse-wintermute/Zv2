@@ -7,9 +7,10 @@ $px=random_int(5,46);$py=random_int(5,46);$levels=array_fill(0,46,0);$levels[17]
 $fog=str_repeat('0',2500);$pos=($px-1)+($py-1)*50;$fog[$pos]='1';$sname=$db->real_escape_string($name."'s Stronghold");$now=time();
 $db->begin_transaction();try{
  $db->query("INSERT INTO users(username) VALUES('$esc')");$uid=(int)$db->insert_id;
- $db->query("INSERT INTO strongholds(userid,name,location,ressis,rates,population,buildings,activebuildings,power,last_tick,world_started,last_raid_cycle) VALUES($uid,'$sname','$px|$py','100|100|80|60|20','4|3|2|2|1','5|0|0|0|2|7','".implode('|',$levels)."','".implode('|',$active)."','4|10',$now,$now,0)");
+ $db->query("INSERT INTO strongholds(userid,name,location,ressis,rates,population,buildings,activebuildings,power,last_tick,world_started,last_raid_cycle) VALUES($uid,'$sname','$px|$py','100|100|80|60|20','10|8|6|6|3','5|0|0|0|2|7','".implode('|',$levels)."','".implode('|',$active)."','4|10',$now,$now,0)");
  $db->query("INSERT INTO discovered(userid,data) VALUES($uid,'$fog')");$db->commit();
  $db->query("INSERT INTO research_state(userid,points,last_tick) VALUES($uid,30,$now)");
+ $db->query("INSERT INTO tutorial_progress(userid,step,dismissed,updated_at) VALUES($uid,0,0,$now)");
  $db->query("INSERT INTO facility_positions(userid,slot,grid_x,grid_y) VALUES($uid,17,3,3)");
  $lead=$db->real_escape_string($name);$db->query("INSERT INTO survivors(userid,name,hp,max_hp,attack_stat,defense_stat,equipped_weapon) VALUES($uid,'$lead',14,14,4,2,10),($uid,'Mara',12,12,3,2,NULL),($uid,'Jonah',11,11,5,1,NULL)");
  $db->query("INSERT INTO squads(userid,name,x,y) VALUES($uid,'Alpha',$px,$py)");$squadId=(int)$db->insert_id;$members=$db->query("SELECT id FROM survivors WHERE userid=$uid ORDER BY id");while($members&&($m=$members->fetch_assoc()))$db->query("INSERT INTO squad_members(squad_id,survivor_id) VALUES($squadId,".(int)$m['id'].")");

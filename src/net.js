@@ -43,6 +43,8 @@ async function api(path, { method = 'GET', body } = {}) {
 export async function getSession() { return api('/api/session.php'); }
 export async function postNewGame(name) { return api('/api/newgame.php', { method: 'POST', body: { name } }); }
 export async function postResume(userid) { return api('/api/resume.php', { method: 'POST', body: { userid: String(userid) } }); }
+export async function getTutorial() { return api('/api/tutorial.php'); }
+export async function postTutorial(action, event = '') { return api('/api/tutorial.php', { method:'POST', body:{ action, event } }); }
 
 // --- game state ---
 export async function getStronghold() {

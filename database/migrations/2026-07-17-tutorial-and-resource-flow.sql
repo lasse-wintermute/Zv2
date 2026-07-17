@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS tutorial_progress (
+  userid INT UNSIGNED PRIMARY KEY,
+  step INT NOT NULL DEFAULT 0,
+  dismissed TINYINT(1) NOT NULL DEFAULT 0,
+  updated_at INT NOT NULL,
+  FOREIGN KEY(userid) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+UPDATE strongholds SET rates='10|8|6|6|3' WHERE rates='4|3|2|2|1';

@@ -69,6 +69,10 @@ Returns the current player's stronghold (single-player: the dev user).
   `language` rows `facility1..46` (EN/DE).
 - `perHour` is **net** (production minus upkeep), already power/staff-adjusted by
   the server. Client-side interpolation is cosmetic only; the next poll is truth.
+- New strongholds use base gathering rates `10|8|6|6|3` and receive a ×4 starter
+  multiplier for their first two hours, then ×2 until hour eight. Life Support,
+  Scrapyard and Garage levels permanently improve their relevant rates; workers and
+  research stack with those bonuses.
 - `powered:false` ⇒ render the building **dark**; `active:0` ⇒ idle/disabled.
 - Unknown fields must be ignored by the client (forward-compat).
 
@@ -85,12 +89,21 @@ GET  /api/session                 → { ok, player: {id, name, stronghold} | nul
 POST /api/newgame  { name }       → { ok, player } | 400 bad_name | 400 name_taken
 POST /api/resume   { userid }     → { ok, player } | 404 no_such_player
 ```
-- `newgame` runs Zv2 onboarding: a default level-1 stronghold
-  (Life support / Scrapyard / Garage / HQ), a random map location, inventory,
-  discovery data, and a three-person survivor squad. Names are 2–20 chars and unique.
+- `newgame` creates a Headquarters-only compound, a random map location, inventory,
+  discovery data, a three-person survivor squad and an active Field Manual. Names are
+  2–20 chars and unique.
 - `resume` is **dev convenience, not auth** — it trusts the userid so a browser restart
   can re-attach (the client stores the id in `localStorage['zv2.userid']`). Replace with
   a real login before multiplayer/public deployment.
+
+```jsonc
+GET  /api/tutorial.php
+POST /api/tutorial.php { action:"advance"|"event"|"dismiss"|"restart", event? }
+```
+The persistent ten-objective Field Manual adapts the original Z tutorial sequence to
+Zv2: Storage, resource facilities, power, staffing, world exploration, room combat and
+loot return. The server validates objectives before advancing; `event:"world"` records
+the otherwise client-only map-opening step.
 
 ## The wasteland (discovery)
 The world is a **50×50 ruined city** — one location per cell. Each player has a
@@ -160,7 +173,7 @@ combat choices update persistent building noise; high noise makes retaliation mo
 
 ```jsonc
 GET  /api/forces.php
-POST /api/forces.php { action:"create"|"assign"|"remove"|"train"|"return"|"deposit"|"equip"|"unequip", survivor, squad, focus, item }
+POST /api/forces.php { action:"create"|"assign"|"remove"|"train"|"return"|"deposit"|"equip"|"unequip"|"vehicle_restore"|"vehicle_assign"|"vehicle_unassign"|"vehicle_refuel"|"vehicle_upgrade", survivor, squad, focus, item }
 ```
 Forces responses contain named squads, members, positions, readiness, cargo weight,
 Storage availability, Troop Quarter limits and recruit progress. Travel completion can
@@ -169,6 +182,12 @@ Each squad also exposes its persistent weapon and defense loadout, slot capaciti
 combined combat stats. Equipping reserves an owned Storage item so it cannot also be
 issued to another squad or survivor. Squad attack and defense bonuses are applied to
 room combat; defensive gear can also absorb roadside-ambush damage.
+Forces responses also expose Garage resources, vehicle blueprints and owned vehicles.
+Vehicle actions use `item` as the vehicle/type id and `focus:"seats"|"cargo"` for
+upgrades. Assigned vehicles enforce passenger seats, consume stored fuel when travel
+begins, increase squad cargo capacity and apply their speed bonus to outbound and return trips.
+An outbound route is blocked when fuel is insufficient; Return Home always remains available
+and falls back to foot pace so a squad can never become permanently stranded.
 
 `GET /api/map.php?r=25` returns the complete 50×50 city. Every tile includes stable
 urban geography (`terrain`, `district`, `density`, `road`, `rail`, `landmark` and

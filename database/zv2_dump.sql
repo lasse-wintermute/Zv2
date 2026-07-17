@@ -867,6 +867,7 @@ CREATE TABLE `strongholds` (
 LOCK TABLES `strongholds` WRITE;
 /*!40000 ALTER TABLE `strongholds` DISABLE KEYS */;
 INSERT INTO `strongholds` VALUES (5,5,'Chuthullu\'s Stronghold',1,0,'45|15','9972.868|9972.43|9891.909|9907.909|9999.452','4|3|2|2|1','5|0|0|0|2|7','0|1|2|2|0|0|0|0|1|1|0|0|0|0|0|0|1|2|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784196628,1784192661,3),(15,15,'GridTest669209\'s Stronghold',1,0,'28|5','100|100|70|52|20','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784196565,1784196565,0),(16,16,'Compound Preview\'s Stronghold',1,0,'45|39','0.424|0.341|0.221|0.221|22.333','4|3|2|2|1','5|0|0|0|2|7','0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784204850,1784196625,7),(17,17,'Mara\'s Stronghold',1,0,'17|8','9786.446|9784.616|9642.665|9670.665|10000','4|3|2|2|1','5|0|0|0|2|7','0|1|0|1|0|0|0|0|2|1|0|1|2|0|0|0|0|2|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784204822,1784196638,7),(18,18,'ResearchTest555891\'s Stronghold',1,0,'22|18','100.001|100.001|70.001|52.001|20','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784197918,1784197917,0),(19,19,'ToolshopTest317653\'s Stronghold',1,0,'14|44','9999.025|9999.019|9999.013|9999.013|9999.006','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|0|1|1|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784199239,1784198990,0),(20,20,'ForceTest24170\'s Stronghold',1,0,'42|43','100.288|100.218|70.146|52.146|20.072','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784200446,1784200186,0),(21,21,'Training74905\'s Stronghold',1,0,'31|34','100.001|100.001|70.001|52.001|20','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784200470,1784200469,0),(22,22,'Expedition52702\'s Stronghold',1,0,'40|30','100.035|100.027|80.019|60.019|20.008','4|3|2|2|1','5|0|0|0|2|7','0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0','1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1','4|10',1784204723,1784204691,0);
+UPDATE `strongholds` SET `rates`='10|8|6|6|3' WHERE `rates`='4|3|2|2|1';
 /*!40000 ALTER TABLE `strongholds` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -968,6 +969,93 @@ CREATE TABLE `training_jobs` (
 LOCK TABLES `training_jobs` WRITE;
 /*!40000 ALTER TABLE `training_jobs` DISABLE KEYS */;
 /*!40000 ALTER TABLE `training_jobs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `tutorial_progress`
+--
+
+DROP TABLE IF EXISTS `tutorial_progress`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `tutorial_progress` (
+  `userid` int(10) unsigned NOT NULL,
+  `step` int(11) NOT NULL DEFAULT 0,
+  `dismissed` tinyint(1) NOT NULL DEFAULT 0,
+  `updated_at` int(11) NOT NULL,
+  PRIMARY KEY (`userid`),
+  CONSTRAINT `tutorial_progress_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tutorial_progress`
+--
+
+LOCK TABLES `tutorial_progress` WRITE;
+/*!40000 ALTER TABLE `tutorial_progress` DISABLE KEYS */;
+/*!40000 ALTER TABLE `tutorial_progress` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `vehicle_types`
+--
+
+DROP TABLE IF EXISTS `vehicle_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `vehicle_types` (
+  `id` int(11) NOT NULL,
+  `name` varchar(80) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `garage_level` int(11) NOT NULL DEFAULT 1,
+  `seats` int(11) NOT NULL,
+  `cargo_bonus` int(11) NOT NULL,
+  `speed_bonus` int(11) NOT NULL,
+  `fuel_capacity` int(11) NOT NULL,
+  `fuel_per_tile` int(11) NOT NULL,
+  `metal_cost` int(11) NOT NULL,
+  `wood_cost` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `vehicle_types` WRITE;
+/*!40000 ALTER TABLE `vehicle_types` DISABLE KEYS */;
+INSERT INTO `vehicle_types` VALUES (1,'Trail motorcycle','Fast and economical, but only suitable for a small scouting team.',1,3,12,45,18,1,45,20),(2,'Utility van','A balanced expedition vehicle with room for a full fireteam and salvage.',2,4,32,30,32,2,90,40),(3,'Armored truck','Slow, thirsty and tough; built to carry a large crew and a heavy haul.',3,6,55,20,48,3,160,70);
+/*!40000 ALTER TABLE `vehicle_types` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `vehicles`
+--
+
+DROP TABLE IF EXISTS `vehicles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `vehicles` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `userid` int(10) unsigned NOT NULL,
+  `type_id` int(11) NOT NULL,
+  `name` varchar(80) NOT NULL,
+  `fuel` int(11) NOT NULL DEFAULT 0,
+  `seats_upgrade` int(11) NOT NULL DEFAULT 0,
+  `cargo_upgrade` int(11) NOT NULL DEFAULT 0,
+  `assigned_squad` int(10) unsigned DEFAULT NULL,
+  `created_at` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `one_vehicle_per_squad` (`assigned_squad`),
+  KEY `userid` (`userid`),
+  KEY `type_id` (`type_id`),
+  CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `vehicles_ibfk_2` FOREIGN KEY (`type_id`) REFERENCES `vehicle_types` (`id`),
+  CONSTRAINT `vehicles_ibfk_3` FOREIGN KEY (`assigned_squad`) REFERENCES `squads` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `vehicles` WRITE;
+/*!40000 ALTER TABLE `vehicles` DISABLE KEYS */;
+/*!40000 ALTER TABLE `vehicles` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

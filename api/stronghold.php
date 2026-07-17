@@ -95,5 +95,6 @@ json_out([
         'builds'     => $builds,
         'world'      => $clock,
         'staffing'   => ['medical'=>(int)$effects['medical'],'craftDiscount'=>(int)$effects['craftDiscount'],'defense'=>(int)$effects['defense']],
+        'gathering'  => ['starterMultiplier'=>(int)($effects['starterBoost']??1),'baseRates'=>array_map('floatval',$zuwachs)],
     ],
 ]);

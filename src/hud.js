@@ -40,8 +40,9 @@ export function createHud(el) {
       <span class="val">${w.defense}<span class="cap">/${w.threat}</span></span>
       <span class="rate">${phaseClock}</span>
     </div>` : '';
+    const starter=Number(state.gathering?.starterMultiplier||1);const boost=starter>1?`<div class="pill gathering-boost" style="--c:#d5a84d"><span class="lbl">Starter gathering</span><span class="val">×${starter}</span><span class="rate">temporary</span></div>`:'';
 
-    el.innerHTML = res + power + worldPill;
+    el.innerHTML = res + boost + power + worldPill;
   }
   return { render };
 }

@@ -5,7 +5,7 @@
 import './style.css';
 import {
   getStronghold, getSource, getFacility, getFacilityCatalog, getMap, getBuilding, getInventory, getResearch, getForces, postForces, postResearch, postInventoryAction, postFacilityAssignment, postCraft, postAdmin, postBuild, postScout, postRoomAction,
-  getSession, postNewGame, postResume,
+  getSession, postNewGame, postResume, getTutorial, postTutorial,
 } from './net.js';
 import { fromApi } from './game.js';
 import { createView } from './view.js';
@@ -17,6 +17,7 @@ import { createAdmin } from './admin.js';
 import { createResearch } from './research.js';
 import { createToolshop } from './toolshop.js';
 import { createForces } from './forces.js';
+import { createTutorial } from './tutorial.js';
 
 const SAVE_KEY = 'zv2.userid';   // remembers the player so a reload resumes the game
 const WORLD_RADIUS = 25;         // full 50x50 city overview; fog still protects undiscovered content
@@ -31,6 +32,7 @@ const zoomControls = document.getElementById('zoomcontrols');
 const researchBtn = document.getElementById('researchbtn');
 const toolshopBtn = document.getElementById('toolshopbtn');
 const forcesBtn = document.getElementById('forcesbtn');
+const tutorialBtn = document.getElementById('tutorialbtn');
 
 const view = createView(canvas);
 const hud = createHud(document.getElementById('hud'));
@@ -42,6 +44,7 @@ const panel = createPanel(document.getElementById('panel'), {
       const r = await postBuild(slot);
       await load();                          // refresh resources and levels
       panel.show(await getFacility(slot));   // refresh the open panel
+      refreshTutorial();
       setStatus(r.message || (r.ok ? 'Build started.' : 'Cannot build.'), !r.ok);
     } catch (e) {
       setStatus('Build failed: ' + e.message, true);
@@ -54,6 +57,7 @@ const panel = createPanel(document.getElementById('panel'), {
       if (!r.ok) throw new Error(r.message || 'Cannot build here.');
       await load();
       panel.hide();
+      refreshTutorial();
       setStatus(r.message || 'Construction started.');
     } catch (e) {
       setStatus(e.message, true);
@@ -65,6 +69,7 @@ const panel = createPanel(document.getElementById('panel'), {
       const r = await postFacilityAssignment(action, slot, survivor);
       await load();
       panel.show(await getFacility(slot));
+      refreshTutorial();
       setStatus(r.message);
     } catch (e) {
       setStatus(e.message, true);
@@ -79,6 +84,7 @@ const panel = createPanel(document.getElementById('panel'), {
       if (action === 'retreat') { panel.hide(); activePlace = null; }
       else panel.showPlace(await getBuilding(activePlace.x, activePlace.y, activePlace.squadId));
       await load();
+      refreshTutorial();
       setStatus(r.message || 'Done.');
     } catch (e) { setStatus(e.message, true); }
   },
@@ -112,11 +118,16 @@ const research = createResearch(document.getElementById('research'), { onStart: 
 const toolshop = createToolshop(document.getElementById('toolshop'), { onProduce: async (recipe) => { try { const r=await postCraft(recipe); toolshop.show(await getInventory()); setStatus(r.message); } catch(e) { setStatus(e.message,true); toolshop.show(await getInventory()); } } });
 const forces = createForces(document.getElementById('forces'), {
   onSelect: async (id) => { activeSquadId=id; try { worldState=await getMap(WORLD_RADIUS,id); requestRender(); forces.show(await getForces(),id); setStatus(`${worldState.squad.name} selected for deployment.`); } catch(e){setStatus(e.message,true);} },
-  onAction: async (action,survivor,squad,focus,item) => { try { const r=await postForces(action,survivor,squad,focus,item); forces.show(await getForces(),activeSquadId); if(mode==='world'){worldState=await getMap(WORLD_RADIUS,activeSquadId);requestRender();}setStatus(r.message); } catch(e){setStatus(e.message,true);forces.show(await getForces(),activeSquadId);} }
+  onAction: async (action,survivor,squad,focus,item) => { try { const r=await postForces(action,survivor,squad,focus,item); forces.show(await getForces(),activeSquadId); if(mode==='world'){worldState=await getMap(WORLD_RADIUS,activeSquadId);requestRender();}refreshTutorial();setStatus(r.message); } catch(e){setStatus(e.message,true);forces.show(await getForces(),activeSquadId);} }
 });
 const start = createStart(document.getElementById('start'), {
   onNewGame: newGame,
   onCancel: () => { if (player) start.hide(); },
+});
+const tutorial = createTutorial(document.getElementById('tutorial'), {
+  onAdvance: async () => { try { tutorial.show(await postTutorial('advance')); } catch(e) { setStatus(e.message,true); refreshTutorial(); } },
+  onDismiss: async () => { try { tutorial.show(await postTutorial('dismiss')); } catch(e) { setStatus(e.message,true); } },
+  onRestart: async () => { try { tutorial.show(await postTutorial('restart')); } catch(e) { setStatus(e.message,true); } },
 });
 
 let state = null;
@@ -139,6 +150,8 @@ function requestRender() {
   if (mode === 'world') { if (worldState) view.renderWorld(worldState); }
   else if (state) view.render(state);
 }
+
+async function refreshTutorial(){if(!playing)return;try{tutorial.show(await getTutorial());}catch{/* migration/API may be unavailable during setup */}}
 
 // --- new-user gameflow -----------------------------------------------------
 async function boot() {
@@ -173,6 +186,7 @@ async function enterGame() {
   modeBtn.textContent = '🗺 World map';
   await load();
   try { const f=await getForces(); if(!activeSquadId)activeSquadId=f.squads?.[0]?.id||0; } catch { /* map can choose the first squad */ }
+  await refreshTutorial();
 }
 
 function leaveToStart(error) {
@@ -187,6 +201,7 @@ adminBtn.addEventListener('click', () => admin.show());
 researchBtn.addEventListener('click', async () => { try { research.show(await getResearch()); } catch(e) { setStatus(e.message,true); } });
 toolshopBtn.addEventListener('click', async () => { try { toolshop.show(await getInventory()); } catch(e) { setStatus(e.message,true); } });
 forcesBtn.addEventListener('click', async () => { try { forces.show(await getForces(),activeSquadId); } catch(e) { setStatus(e.message,true); } });
+tutorialBtn.addEventListener('click', () => tutorial.reopen());
 zoomControls.addEventListener('click', (e) => {
   const button = e.target.closest('[data-zoom]');
   if (!button) return;
@@ -239,9 +254,10 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => { if (playing) load(); }, 15000);   // re-poll; server is authoritative
-setInterval(() => { if (playing && research.isOpen()) getResearch().then((d) => research.show(d)).catch(() => {}); }, 3000);
-setInterval(() => { if (playing && toolshop.isOpen()) getInventory().then((d) => toolshop.show(d)).catch(() => {}); }, 3000);
-setInterval(() => { if (playing && forces.isOpen()) getForces().then((d) => forces.show(d,activeSquadId)).catch(() => {}); }, 3000);
+setInterval(() => { if (playing && research.isOpen() && !document.getElementById('research').classList.contains('window-interacting')) getResearch().then((d) => research.show(d)).catch(() => {}); }, 3000);
+setInterval(() => { if (playing && toolshop.isOpen() && !document.getElementById('toolshop').classList.contains('window-interacting')) getInventory().then((d) => toolshop.show(d)).catch(() => {}); }, 3000);
+setInterval(() => { if (playing && forces.isOpen() && !document.getElementById('forces').classList.contains('window-interacting')) getForces().then((d) => forces.show(d,activeSquadId)).catch(() => {}); }, 3000);
+setInterval(() => { if (playing && tutorial.isOpen() && !document.getElementById('tutorial').classList.contains('window-interacting')) refreshTutorial(); }, 3000);
 setInterval(async () => {
   if (!playing || mode !== 'world' || !worldState?.squad?.traveling) return;
   try {
@@ -264,6 +280,7 @@ async function setMode(m) {
     try { worldState = await getMap(WORLD_RADIUS,activeSquadId); if(!activeSquadId)activeSquadId=worldState.squad.id; }
     catch (e) { setStatus('map load failed: ' + e.message, true); }
   }
+  if(m==='world'&&tutorial.currentStep()===6){try{tutorial.show(await postTutorial('event','world'));}catch{/* remain on objective until next attempt */}}
   modeBtn.textContent = m === 'world' ? '🏠 Compound' : '🗺 World map';
   setStatus(m === 'world'
     ? 'Berlin exclusion zone · drag to pan and zoom'
