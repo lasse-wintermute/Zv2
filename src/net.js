@@ -104,6 +104,7 @@ export async function postRoomAction(action, x, y, room, item = 0, survivor = 0,
 export async function postScout(x, y, squad = 0) {
   return api('/api/scout.php', { method: 'POST', body: { x: String(x), y: String(y), squad:String(squad) } });
 }
+export async function postRecruit(action, encounter, squad = 0) { return api('/api/recruit.php', { method:'POST', body:{ action, encounter:String(encounter), squad:String(squad) } }); }
 
 // Start a build/upgrade. Rule failures come back ok:false with HTTP 200,
 // so return the raw payload and let the caller show the message.

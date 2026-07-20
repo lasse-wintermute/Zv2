@@ -24,6 +24,7 @@ $seenAt = static function (int $x, int $y) use ($fog, $W): bool {
     if ($x < 1 || $y < 1 || $x > 50 || $y > 50) return false;
     return substr($fog, ($x - 1) + ($y - 1) * $W, 1) === '1';
 };
+$recruitSignals=[];$rr=$db->query("SELECT x,y FROM recruit_encounters WHERE userid=$uid AND found_at=0");while($rr&&($re=$rr->fetch_assoc()))$recruitSignals[(int)$re['x'].'|'.(int)$re['y']]=true;
 
 // A stable, Berlin-inspired urban layer shared by every player. It adds readable
 // geography without changing the authoritative building/room data underneath it.
@@ -101,14 +102,17 @@ while ($q && ($row = $q->fetch_assoc())) {
         $t['name']  = $bn !== '' ? $bn : (string) ($row['typename'] ?? ('Building #' . $row['typ']));
         $t['rooms'] = (int) $row['count_rooms'];
         $t['cleared'] = (int) $row['cleared_at'] > 0;
+        if (isset($recruitSignals["$x|$y"])) $t['survivorSignal'] = true;
     } else {
         // frontier rule: you may only explore next to ground you already know
         $t['scoutable'] = $seenAt($x + 1, $y) || $seenAt($x - 1, $y) || $seenAt($x, $y + 1) || $seenAt($x, $y - 1);
+        if ($t['scoutable'] && isset($recruitSignals["$x|$y"])) $t['survivorSignal'] = true;
     }
     $tiles[] = $t;
 }
 
 $clearedBuildings=(int)$db->query("SELECT COUNT(*) n FROM building_runs WHERE userid=$uid AND cleared_at>0")->fetch_assoc()['n'];
+$recentRecruit=null;if(!$squad['traveling']){$sx=(int)$squad['x'];$sy=(int)$squad['y'];$recent=$db->query("SELECT r.id,r.name,r.x,r.y,r.attack_stat,r.defense_stat,r.met_at,r.required_item,i.name item_name,i.category,COALESCE(c.amount,0) carried FROM recruit_encounters r LEFT JOIN items i ON i.id=r.required_item LEFT JOIN squad_cargo c ON c.item_id=r.required_item AND c.squad_id=".(int)$squad['id']." WHERE r.userid=$uid AND r.x=$sx AND r.y=$sy AND r.met_at>0 AND r.found_at=0 LIMIT 1");if($recent&&$recent->num_rows){$re=$recent->fetch_assoc();$recentRecruit=['id'=>(int)$re['id'],'name'=>$re['name'],'x'=>(int)$re['x'],'y'=>(int)$re['y'],'attack'=>(int)$re['attack_stat'],'defense'=>(int)$re['defense_stat'],'metAt'=>(int)$re['met_at'],'requiredItem'=>['id'=>(int)$re['required_item'],'name'=>$re['item_name'],'category'=>$re['category'],'carried'=>(int)$re['carried']],'canRecruit'=>(int)$re['carried']>0];}}
 json_out([
     'ok'     => true,
     'world'  => ['w' => $W, 'h' => $H],
@@ -117,5 +121,6 @@ json_out([
     'squads' => $squads,
     'clearedBuildings' => $clearedBuildings,
     'productionBonus' => $clearedBuildings * .5,
+    'recentRecruit' => $recentRecruit,
     'tiles'  => $tiles,
 ]);

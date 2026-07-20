@@ -5,7 +5,7 @@
 import './style.css';
 import {
   getStronghold, getSource, getFacility, getFacilityCatalog, getMap, getBuilding, getInventory, getResearch, getForces, postForces, postResearch, postInventoryAction, postFacilityAssignment, postCraft, postAdmin, postBuild, postScout, postRoomAction,
-  getSession, postNewGame, postResume, getTutorial, postTutorial, getObjectives, postObjectiveClaim,
+  getSession, postNewGame, postResume, getTutorial, postTutorial, getObjectives, postObjectiveClaim, postRecruit,
 } from './net.js';
 import { fromApi } from './game.js';
 import { createView } from './view.js';
@@ -31,6 +31,7 @@ import { loadItems } from './items.js';
 import { postBuildCancel, postResearchCancel } from './net.js';
 import { createPower } from './power.js';
 import { createIdentity } from './identity.js';
+import { createRecruitEncounter } from './recruit.js';
 import { createAlly } from './ally.js';
 import { getIdentity, postIdentity, getAlly, postAlly, postActivity } from './net.js';
 import { RES, facInfo, fmtNum, fmtDuration, resIcon, resName, facKey, slotForKey } from './config.js';
@@ -57,6 +58,10 @@ const tutorialBtn = document.getElementById('tutorialbtn');
 const logBtn = document.getElementById('logbtn');
 
 const notify = createNotify();
+const recruitEncounter = createRecruitEncounter({
+  onAction: async (action,id) => { const r=await postRecruit(action,id,activeSquadId);if(action==='recruit'){worldState=await getMap(WORLD_RADIUS,activeSquadId);requestRender();setStatus(r.message,false,'good');}return r; },
+  onOpenReserve: () => forcesBtn.click(),
+});
 initTooltips();
 const view = createView(canvas);
 const minimapEl = document.getElementById('minimap');
@@ -281,7 +286,7 @@ function requestRender() {
   if (!playing) return;
   view.resize();              // keep the canvas sized to the viewport
   if (mode === 'world') {
-    if (worldState) { view.renderWorld(worldState); minimap.render(worldState, view.cam); }
+    if (worldState) { view.renderWorld(worldState); minimap.render(worldState, view.cam); if(worldState.recentRecruit)recruitEncounter.show(worldState.recentRecruit);else recruitEncounter.reset(); }
     minimapEl.classList.remove('hidden');
   } else {
     minimapEl.classList.add('hidden');
@@ -699,9 +704,9 @@ function openContextMenu(e) {
     return;
   }
   if (t.scoutable) {
-    context.openAt(e.clientX, e.clientY, 'Unknown block', [
-      { label: 'Scout this block', small: squad?.traveling ? 'squad already traveling' : 'reveal & travel', disabled: !!squad?.traveling, onClick: async () => { try { const r = await postScout(t.x, t.y, activeSquadId); worldState = await getMap(WORLD_RADIUS, activeSquadId); requestRender(); setStatus(`${r.message} · ${r.travel.seconds}s`); } catch (err) { setStatus(err.message, true); } } },
-    ], `${t.x}|${t.y}`);
+    context.openAt(e.clientX, e.clientY, t.survivorSignal ? 'Signs of life' : 'Unknown block', [
+      { label: t.survivorSignal ? 'Investigate signal' : 'Scout this block', small: squad?.traveling ? 'squad already traveling' : (t.survivorSignal ? 'possible survivor · reveal & travel' : 'reveal & travel'), disabled: !!squad?.traveling, onClick: async () => { try { const r = await postScout(t.x, t.y, activeSquadId); worldState = await getMap(WORLD_RADIUS, activeSquadId); requestRender(); setStatus(`${r.message} · ${r.travel.seconds}s`); } catch (err) { setStatus(err.message, true); } } },
+    ], `${t.x}|${t.y}${t.survivorSignal ? ' · survivor signal' : ''}`);
   }
 }
 canvas.addEventListener('wheel', (e) => {
@@ -750,7 +755,7 @@ async function onWorldClick(x, y) {
     return;
   }
   if (!t.scoutable) { setStatus('Too far — explore outward from ground you know.', true); return; }
-  setStatus('Scouting…');
+  setStatus(t.survivorSignal ? 'Investigating signs of life…' : 'Scouting…');
   try {
     const r = await postScout(t.x, t.y, activeSquadId);
     worldState = await getMap(WORLD_RADIUS,activeSquadId);

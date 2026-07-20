@@ -420,6 +420,7 @@ export function createView(canvas) {
           ctx.beginPath(); ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();
           ctx.strokeStyle = '#d7bf55'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
         }
+        if(t.survivorSignal){ctx.save();ctx.fillStyle='rgba(16,27,23,.92)';ctx.strokeStyle='#7ed19a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,sy-7,8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#b9f0c9';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('!',sx,sy-3);ctx.strokeStyle='rgba(126,209,154,.55)';ctx.beginPath();ctx.arc(sx,sy-7,12,Math.PI*1.15,Math.PI*1.85);ctx.stroke();ctx.restore();}
         continue;
       }
 
@@ -448,6 +449,7 @@ export function createView(canvas) {
       ctx.fillStyle = t.home ? '#fff' : (t.landmark ? '#e8cc82' : '#e8dcc4');
       ctx.fillText(label, px, py + 15 * z + 6);
       if (t.cleared && !t.home) { ctx.fillStyle='#79c96b';ctx.strokeStyle='rgba(4,12,6,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px+14,py-12*z,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#10200f';ctx.font='bold 10px system-ui';ctx.fillText('✓',px+14,py-9*z); }
+      if(t.survivorSignal){ctx.fillStyle='#7ed19a';ctx.strokeStyle='rgba(5,18,10,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px-14,py-12*z,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#102319';ctx.font='bold 10px system-ui';ctx.fillText('!',px-14,py-9*z);}
     }
 
     for (const squad of (map.squads || (map.squad ? [map.squad] : []))) {
