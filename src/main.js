@@ -408,6 +408,7 @@ async function load() {
     const raid = state.world?.lastRaid;
     if (raid?.time && raid.time > seenRaidTime) {
       seenRaidTime = raid.time;
+      if (mode === 'compound' && raid.time >= Math.floor(Date.now() / 1000) - 90) view.startRaidAnimation(raid);
       if (raid.success) setStatus(`Zombie horde repelled · defence ${raid.defense} vs threat ${raid.threat}`, false, 'good');
       else setStatus(`Zombie horde breached the walls (threat ${raid.threat} vs defence ${raid.defense})${raid.resourceLoss ? ` · ${raid.resourceLoss} food devoured` : ''}${raid.wounded ? ` · ${raid.wounded} wounded` : ''}`, true, 'bad');
     }
@@ -430,9 +431,11 @@ async function load() {
 
 // live tick: HUD interpolation, plus build-countdown re-render + finalize on completion
 const finalizeTriggered = new Set();
+let phaseRefreshAt = 0;
 setInterval(() => {
   if (!playing || !state) return;
   hud.render(state);
+  const nextPhaseAt=Number(state.world?.nextPhaseAt||0);if(nextPhaseAt&&nextPhaseAt*1000<=Date.now()&&phaseRefreshAt!==nextPhaseAt){phaseRefreshAt=nextPhaseAt;load();return;}
   const builds = state.builds || [];
   if (builds.length && mode === 'compound') requestRender();   // tick the countdown badges
   for (const b of builds) {

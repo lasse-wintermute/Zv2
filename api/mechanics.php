@@ -99,7 +99,8 @@ function zv2_world_clock(array $s):array{
     $now=time();$start=(int)($s['world_started']??$now);if($start<=0)$start=$now;$elapsed=max(0,$now-$start);$within=$elapsed%ZV2_CYCLE_SECONDS;$phase=$within<ZV2_DAY_SECONDS?'day':'night';$next=$now+($phase==='day'?ZV2_DAY_SECONDS-$within:ZV2_CYCLE_SECONDS-$within);$day=(int)floor($elapsed/ZV2_CYCLE_SECONDS)+1;
     // Hordes only muster every 3rd night (~once per real hour) so the economy
     // can outpace the pressure; the day/night rhythm itself stays at 20 minutes.
-    return['phase'=>$phase,'day'=>$day,'nextPhaseAt'=>$next,'secondsToPhase'=>$next-$now,'raidCycle'=>(int)floor(($elapsed+ZV2_DAY_SECONDS)/(ZV2_CYCLE_SECONDS*3))];
+    $raidCycle=(int)floor(($elapsed+ZV2_DAY_SECONDS)/(ZV2_CYCLE_SECONDS*3));$nextRaidAt=$start+($raidCycle+1)*ZV2_CYCLE_SECONDS*3-ZV2_DAY_SECONDS;
+    return['phase'=>$phase,'day'=>$day,'nextPhaseAt'=>$next,'secondsToPhase'=>$next-$now,'raidCycle'=>$raidCycle,'nextRaidAt'=>$nextRaidAt,'raidAtNextPhase'=>$phase==='day'&&abs($nextRaidAt-$next)<=1];
 }
 
 function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):array{

@@ -42,6 +42,31 @@ export function createView(canvas) {
   let emptyPlacements = [];
   let selected = null;        // selected facility slot (highlighted)
   let selectedCell = null;    // selected empty compound plot {gx,gy} (highlighted)
+  let raidAnimation = null;
+  let raidFrame = 0;
+  let lastCompoundState = null;
+
+  function startRaidAnimation(raid) {
+    raidAnimation = { raid, started: performance.now(), duration: 7600 };
+    if (lastCompoundState && !raidFrame) raidFrame = requestAnimationFrame(() => { raidFrame = 0; render(lastCompoundState); });
+  }
+
+  function raidZombie(x, y, scale, fallen=false, alpha=1) {
+    ctx.save();ctx.translate(x,y);ctx.rotate(fallen?1.35:0);ctx.globalAlpha=alpha;ctx.strokeStyle='#151b17';ctx.fillStyle='#62705c';ctx.lineWidth=Math.max(1,scale);
+    ctx.beginPath();ctx.arc(0,-8*scale,3.3*scale,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,-5*scale);ctx.lineTo(0,5*scale);ctx.moveTo(0,-1*scale);ctx.lineTo(-5*scale,3*scale);ctx.moveTo(0,-1*scale);ctx.lineTo(5*scale,2*scale);ctx.moveTo(0,5*scale);ctx.lineTo(-4*scale,11*scale);ctx.moveTo(0,5*scale);ctx.lineTo(4*scale,11*scale);ctx.stroke();ctx.restore();
+  }
+
+  function drawRaidAnimation() {
+    if (!raidAnimation) return;
+    const elapsed=performance.now()-raidAnimation.started,p=Math.min(1,elapsed/raidAnimation.duration),raid=raidAnimation.raid,breached=!raid.success;
+    const wallY=Math.min(H-105,H*.73),approach=Math.min(1,p/.72),ease=1-Math.pow(1-approach,2),zombies=[];
+    ctx.save();ctx.fillStyle=`rgba(70,8,6,${.08+Math.sin(p*Math.PI)*.12})`;ctx.fillRect(0,82,W,H-82);
+    for(let i=0;i<18;i++){const lane=.14+hash(i+raid.time)*.72,targetX=W*lane,delay=(i%6)*.035,local=Math.max(0,Math.min(1,(approach-delay)/(1-delay))),targetY=breached?wallY+hash(i+4)*18:wallY+58+hash(i+4)*34;const y=H+28+(targetY-(H+28))*(1-Math.pow(1-local,2));const x=targetX+Math.sin(p*28+i)*5;const fallen=!breached&&p>.66+(i%5)*.025;const alpha=fallen?Math.max(.18,1-(p-.68)*2.4):1;raidZombie(x,y,.75+hash(i+9)*.45,fallen,alpha);zombies.push({x,y});}
+    if(p>.1&&p<.82){const volley=Math.floor(elapsed/95);ctx.lineWidth=1.2;for(let i=0;i<7;i++){if(hash(volley*11+i)<.42)continue;const gunX=W*(i%2?.43:.57)+(i-3)*4,gunY=H*.47+(i%3)*6,target=zombies[(volley+i*3)%zombies.length];ctx.strokeStyle=`rgba(255,210,91,${.38+hash(volley+i)*.5})`;ctx.beginPath();ctx.moveTo(gunX,gunY);ctx.lineTo(target.x,target.y-5);ctx.stroke();ctx.fillStyle='#fff1a6';ctx.beginPath();ctx.arc(gunX,gunY,2.5+hash(volley+i)*2,0,Math.PI*2);ctx.fill();}}
+    if(breached&&p>.72){ctx.fillStyle=`rgba(150,27,18,${(p-.72)*.5})`;ctx.fillRect(0,82,W,H-82);ctx.strokeStyle='#e05743';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(W*.28,wallY);ctx.lineTo(W*.34,wallY-9);ctx.lineTo(W*.39,wallY+7);ctx.stroke();}
+    const outcome=p<.68?'DEFEND THE COMPOUND':(breached?'WALL BREACHED':'HORDE REPELLED');ctx.textAlign='center';ctx.font='900 18px system-ui,sans-serif';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,.8)';ctx.strokeText(outcome,W/2,116);ctx.fillStyle=breached?'#ef7462':'#d8c76e';ctx.fillText(outcome,W/2,116);ctx.font='11px system-ui,sans-serif';ctx.fillStyle='#ddd4bd';ctx.fillText(`Defence ${raid.defense} vs threat ${raid.threat}`,W/2,134);ctx.restore();
+    if(p>=1)raidAnimation=null;else if(!raidFrame)raidFrame=requestAnimationFrame(()=>{raidFrame=0;if(lastCompoundState)render(lastCompoundState);});
+  }
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -254,6 +279,7 @@ export function createView(canvas) {
   }
 
   function render(state) {
+    lastCompoundState = state;
     ctx.clearRect(0, 0, W, H);
     sky();
     ctx.save();ctx.translate(W/2,H/2);ctx.rotate(cam.rot);ctx.scale(cam.zoom,cam.zoom);ctx.translate(-W/2,-H/2);
@@ -310,6 +336,7 @@ export function createView(canvas) {
       ctx.fillStyle = 'rgba(12,18,42,.28)';
       ctx.fillRect(0, 0, W, H);
     }
+    drawRaidAnimation();
     title(state);
   }
 
@@ -366,6 +393,7 @@ export function createView(canvas) {
   function citySignsOfLife(sx,sy,t,seed){if(!['urban','bridge'].includes(t.terrain))return;const smoke=hash(seed+121);if(smoke>.982){const h=10+hash(seed+122)*14;ctx.strokeStyle=t.seen?'rgba(116,122,112,.56)':'rgba(62,75,69,.38)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+5,sy-8);ctx.bezierCurveTo(sx+2,sy-h*.45,sx+9,sy-h*.72,sx+5,sy-h);ctx.stroke();ctx.fillStyle=t.seen?'rgba(126,79,43,.82)':'rgba(73,53,38,.52)';ctx.beginPath();ctx.arc(sx+5,sy-7,1.8,0,Math.PI*2);ctx.fill();}if(t.seen&&hash(seed+140)>.88){ctx.fillStyle='#a89151';ctx.fillRect(sx-1,sy+3,1.2,1.2);ctx.fillRect(sx+3,sy+1,1.2,1.2);}}
 
   function renderWorld(map) {
+    lastCompoundState = null;
     ctx.clearRect(0, 0, W, H);
     sky();
     ctx.save();ctx.translate(W/2,H/2);ctx.rotate(cam.rot);ctx.scale(cam.worldZoom,cam.worldZoom);ctx.translate(-W/2,-H/2);
@@ -482,5 +510,5 @@ export function createView(canvas) {
     cam.x=(minX+maxX)/2-ox;
     cam.y=(minY+maxY)/2-oy+30;
   }
-  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn };
+  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn, startRaidAnimation };
 }

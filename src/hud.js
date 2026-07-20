@@ -38,6 +38,8 @@ export function createHud(el) {
     const w = state.world;
     const phaseSeconds = w ? Math.max(0, w.nextPhaseAt - Date.now() / 1000) : 0;
     const phaseClock = `${Math.floor(phaseSeconds / 60)}:${String(Math.floor(phaseSeconds % 60)).padStart(2, '0')}`;
+    const raidSeconds = w ? Math.max(0, w.nextRaidAt - Date.now() / 1000) : 0;
+    const raidClock = `${Math.floor(raidSeconds / 60)}:${String(Math.floor(raidSeconds % 60)).padStart(2, '0')}`;
     // SOTD-style sky arc: the sun (or moon) travels the arc as the phase advances.
     let worldPill = '';
     if (w) {
@@ -46,14 +48,14 @@ export function createHud(el) {
       const theta = progress * Math.PI;
       const ox = 55 - 47 * Math.cos(theta), oy = 27 - 23 * Math.sin(theta);
       worldPill = `<div class="pill skypill ${night ? 'night' : ''}" style="--c:${night ? '#7786bd' : '#d4a84f'}"
-        data-tip="${night ? 'Night' : 'Day'} ${w.day} — ${night ? 'raid at dawn' : 'night falls'} in ${phaseClock}\nDefence ${w.defense} vs threat ${w.threat}">
+        data-tip="${night ? 'Night' : 'Day'} ${w.day} — ${night ? 'dawn' : 'night falls'} in ${phaseClock}\nNext horde: ${raidClock}${w.raidAtNextPhase ? ' (at this transition)' : ''}\nDefence ${w.defense} vs threat ${w.threat}">
         <span class="skyarc">
           <svg viewBox="0 0 110 30" aria-hidden="true"><path d="M8 28 A 50 50 0 0 1 102 28" fill="none" stroke="${night ? 'rgba(119,134,189,.45)' : 'rgba(212,168,79,.5)'}" stroke-width="1.6" stroke-dasharray="3 3"/></svg>
           <b class="skyorb" style="left:${(ox / 110) * 100}%;top:${oy}px">${night ? '🌙' : '☀️'}</b>
         </span>
         <span class="lbl">${night ? 'Night' : 'Day'} ${w.day}</span>
         <span class="val">${w.defense}<span class="cap">/${w.threat}</span></span>
-        <span class="rate">${phaseClock}</span>
+        <span class="rate">${w.raidAtNextPhase ? 'RAID ' : ''}${phaseClock}</span>
       </div>`;
     }
     const starter=Number(state.gathering?.starterMultiplier||1);const cleared=Number(state.gathering?.clearedBuildings||0);const clearedBonus=Number(state.gathering?.clearedBonus||0);const boost=(starter>1?`<div class="pill gathering-boost" style="--c:#d5a84d"><span class="lbl">Starter gathering</span><span class="val">×${starter}</span><span class="rate">temporary</span></div>`:'')+(cleared?`<div class="pill gathering-boost" style="--c:#74b86a" data-tip="${cleared} fully cleared building${cleared===1?'':'s'}\nEach adds +0.5% to all resource production"><span class="lbl">Cleared territory</span><span class="val">+${clearedBonus}%</span><span class="rate">${cleared} building${cleared===1?'':'s'}</span></div>`:'');
