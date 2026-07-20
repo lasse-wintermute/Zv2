@@ -24,16 +24,22 @@ $power     = pipe_nums($s['power']);              // [0]=used(drain) [1]=generat
 $zuwachs   = pipe_nums($s['rates']);
 $active    = pipe_nums($s['activebuildings']);    // per-slot 0..1 operational factor
 $loc       = explode('|', $s['location'] ?? '');
-$effects   = zv2_staff_effects($uid, $buildings);
+$activityMap = zv2_activity((string) $s['activebuildings']);
+$effects   = zv2_staff_effects($uid, $buildings, $activityMap);
 
-// resources
+// resources — food additionally reports production vs consumption (OG net display)
+$alive = (int)$db->query("SELECT COUNT(*) n FROM survivors WHERE userid=$uid AND hp>0")->fetch_assoc()['n'];
+$foodEaten = round($alive * 3 / 24, 2);   // 3 food per survivor per day
 $resKeys = ['water', 'food', 'wood', 'metal', 'petrol'];
 $resources = [];
+$caps = zv2_storage_caps($buildings);
 foreach ($resKeys as $i => $k) {
     $amount  = round($ressis[$i] ?? 0, 1);
     $perHour = round(($zuwachs[$i] ?? 0) * $effects['rate'][$i], 1);
-    $cap = max(1000, (float) pow(10, (int) ceil(log10(max($amount, 1)))));
+    // Water is the uncapped money-analog slot; show a rounded display cap instead.
+    $cap = $caps[$i] >= 1000000000.0 ? max(1000, (float) pow(10, (int) ceil(log10(max($amount, 1))))) : $caps[$i];
     $resources[$k] = ['amount' => $amount, 'cap' => $cap, 'perHour' => $perHour];
+    if ($k === 'food') { $resources[$k]['productionPerHour'] = $perHour; $resources[$k]['consumptionPerHour'] = $foodEaten; $resources[$k]['perHour'] = round($perHour - $foodEaten, 1); }
 }
 
 // Persistent plots for built facilities and construction sites.
@@ -50,6 +56,8 @@ for($slot=1;$slot<count($buildings);$slot++) {
         'active'  => (float) $a,
         'powered' => $a > 0,          // TODO(P2): derive from the real power grid
         'staff'   => (int)($effects['workers'][$slot] ?? 0),
+        'drain'   => zv2_facility_drain($slot, (int) $lvl, $activityMap[$slot] ?? 1.0),
+        'adjustable' => in_array($slot, ZV2_ADJUSTABLE, true),
         'gridX'   => (int)($positions[$slot]['x']??3),
         'gridY'   => (int)($positions[$slot]['y']??3),
         'constructing' => $lvl<=0,
@@ -60,11 +68,20 @@ for($slot=1;$slot<count($buildings);$slot++) {
 $builds = [];
 foreach ($buildRows as $b) $builds[] = $b;
 
-$used = $power[0] ?? 0;
-$generated = $power[1] ?? 0;
-$generated += $effects['power'];
+// The OG live queue: every running job with its deadline, for the chrome box.
+$jobs = [];
+foreach ($buildRows as $b) { $fn=$db->query('SELECT name FROM facilities WHERE id='.(int)$b['slot'].' LIMIT 1'); $jobs[]=['type'=>'build','label'=>(($fn&&$fn->num_rows)?$fn->fetch_assoc()['name']:'Facility').' → L'.$b['toLevel'],'due'=>$b['due'],'cancelable'=>true,'ref'=>$b['slot']]; }
+$jq=$db->query("SELECT j.due,j.tech_id,t.name FROM research_jobs j JOIN technologies t ON t.id=j.tech_id WHERE j.userid=$uid LIMIT 1");if($jq&&$jq->num_rows){$j=$jq->fetch_assoc();$jobs[]=['type'=>'research','label'=>'Research: '.$j['name'],'due'=>(int)$j['due'],'cancelable'=>true,'ref'=>(int)$j['tech_id']];}
+$pq2=$db->query("SELECT p.due,r.name FROM production_jobs p JOIN recipes r ON r.id=p.recipe_id WHERE p.userid=$uid LIMIT 1");if($pq2&&$pq2->num_rows){$j=$pq2->fetch_assoc();$jobs[]=['type'=>'production','label'=>'Toolshop: '.$j['name'],'due'=>(int)$j['due'],'cancelable'=>false];}
+$tq=$db->query("SELECT t.due,t.focus,s.name FROM training_jobs t JOIN survivors s ON s.id=t.survivor_id WHERE t.userid=$uid");while($tq&&($j=$tq->fetch_assoc()))$jobs[]=['type'=>'training','label'=>'Training: '.$j['name'].' ('.$j['focus'].')','due'=>(int)$j['due'],'cancelable'=>false];
+$hq2=$db->query("SELECT ht.due,s.name FROM hospital_treatments ht JOIN survivors s ON s.id=ht.survivor_id WHERE ht.userid=$uid ORDER BY ht.due");while($hq2&&($j=$hq2->fetch_assoc()))$jobs[]=['type'=>'treatment','label'=>'Hospital: '.$j['name'],'due'=>(int)$j['due'],'cancelable'=>false];
+$sq2=$db->query("SELECT name,target_x,target_y,arrives_at FROM squads WHERE userid=$uid AND arrives_at>".time());while($sq2&&($j=$sq2->fetch_assoc()))$jobs[]=['type'=>'travel','label'=>$j['name'].' → '.$j['target_x'].'|'.$j['target_y'],'due'=>(int)$j['arrives_at'],'cancelable'=>false];
+usort($jobs,fn($a,$b2)=>$a['due']<=>$b2['due']);
+
+$used = $effects['drain'] ?? ($power[0] ?? 0);
+$generated = $effects['power'];
 $clock = zv2_world_clock($s);
-$clock['threat'] = 7 + $clock['day'] * 2 + (($uid * 17 + $clock['day'] * 13) % 6);
+$clock['threat'] = 5 + min(12, max(0, $clock['day'] - 6)) * 2 + (($uid * 17 + $clock['day'] * 13) % 6);   // keep in sync with zv2_resolve_raid
 $clock['defense'] = $effects['defense'];
 $clock['lastRaid'] = zv2_latest_raid($uid);
 
@@ -76,11 +93,14 @@ json_out([
     'stronghold' => [
         'id'       => (int) $s['id'],
         'name'     => $s['name'],
+        'emblem'   => ($s['emblem'] ?? '') ?: '🏚',
         'level'    => (int) $s['level'],
         'points'   => (int) $s['points'],
         'location' => ['x' => (int) ($loc[0] ?? 0), 'y' => (int) ($loc[1] ?? 0)],
         'resources' => $resources,
-        'power'     => ['generated' => round($generated, 1), 'used' => round($used, 1)],
+        'power'     => ['generated' => round($generated, 1), 'used' => round($used, 1), 'level' => round(($effects['powerLevel'] ?? 1) * 100)],
+        'jobs'      => $jobs,
+        'survivorsAlive' => $alive,
         'population' => [
             'scientists'  => (int) round($pop[1] ?? 0),
             'technicians' => (int) round($pop[2] ?? 0),

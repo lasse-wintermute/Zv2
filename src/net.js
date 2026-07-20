@@ -68,6 +68,22 @@ export async function postForces(action, survivor = 0, squad = 0, focus = '', it
 export async function getInventory() { return api('/api/inventory.php'); }
 export async function getResearch() { return api('/api/research.php'); }
 export async function postResearch(tech) { return api('/api/research.php', { method: 'POST', body: { tech: String(tech) } }); }
+export async function getObjectives() { return api('/api/objectives.php'); }
+export async function postObjectiveClaim(id) { return api('/api/objectives.php', { method: 'POST', body: { claim: String(id) } }); }
+export async function getItems() { return api('/api/items.php'); }
+export async function postActivity(slot, percent) {
+  return api('/api/activity.php', { method: 'POST', body: { slot: String(slot), percent: String(percent) } });
+}
+export async function getAlly() { return api('/api/ally.php'); }
+export async function postAlly(action, { name = '', emblem = '', description = '' } = {}) {
+  return api('/api/ally.php', { method: 'POST', body: { action, name, emblem, description } });
+}
+export async function getIdentity() { return api('/api/identity.php'); }
+export async function postIdentity(action, { name = '', emblem = '', squad = 0 } = {}) {
+  return api('/api/identity.php', { method: 'POST', body: { action, name, emblem, squad: String(squad) } });
+}
+export async function postBuildCancel(slot) { return api('/api/build.php', { method: 'POST', body: { action: 'cancel', slot: String(slot) } }); }
+export async function postResearchCancel() { return api('/api/research.php', { method: 'POST', body: { action: 'cancel' } }); }
 export async function postFacilityAssignment(action, slot, survivor) {
   return api('/api/facility-assignment.php', { method: 'POST', body: { action, slot: String(slot), survivor: String(survivor) } });
 }

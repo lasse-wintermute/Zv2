@@ -1,7 +1,7 @@
 // Isometric renderer: draws the stronghold as a living compound (SOTD feel).
 // Read-only for now — facilities laid out on an iso grid, extruded by level,
 // coloured by category, dark when unpowered.
-import { TW, TH, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
+import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
 
 const INSET = 0.82;                 // building footprint vs tile
 const hOf = (level) => 16 + level * 9;
@@ -22,11 +22,26 @@ const hash = (n) => { const x = Math.sin(n * 91.17) * 43758.5453; return x - Mat
 
 export function createView(canvas) {
   const ctx = canvas.getContext('2d');
-  const cam = { x: 0, y: 0, zoom: 1, worldZoom: .48 };
+  const cam = { x: 0, y: 0, zoom: 1, worldZoom: .48, rot: 0 };   // rot: radians, SOTD right-drag rotate
   let W = 0, H = 0;
+  let gridDims = { w: 7, h: 7 };   // last compound grid, for centerCompoundOn
+
+  // pre-transform point -> actual screen px under the current rotation+zoom
+  function rotP(sx, sy, z) {
+    const cos = Math.cos(cam.rot), sin = Math.sin(cam.rot);
+    const dx = sx - W / 2, dy = sy - H / 2;
+    return [W / 2 + (dx * cos - dy * sin) * z, H / 2 + (dx * sin + dy * cos) * z];
+  }
+  // screen px -> pre-transform point (inverse of rotP), for hit-testing
+  function unrotP(px, py, z) {
+    const cos = Math.cos(cam.rot), sin = Math.sin(cam.rot);
+    const dx = px - W / 2, dy = py - H / 2;
+    return [W / 2 + (dx * cos + dy * sin) / z, H / 2 + (-dx * sin + dy * cos) / z];
+  }
   let placements = [];        // [{slot,type,sx,sy,level}] captured each render, for hit-testing
   let emptyPlacements = [];
-  let selected = null;        // selected slot (highlighted)
+  let selected = null;        // selected facility slot (highlighted)
+  let selectedCell = null;    // selected empty compound plot {gx,gy} (highlighted)
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -81,6 +96,18 @@ export function createView(canvas) {
     ctx.strokeStyle = 'rgba(205,170,65,.45)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(sx + 18, sy + 8); ctx.lineTo(sx + 28, sy + 3); ctx.stroke();
     if(empty){ctx.strokeStyle='rgba(198,184,118,.2)';ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(sx,sy-TH/2+5);ctx.lineTo(sx+TW/2-10,sy);ctx.lineTo(sx,sy+TH/2-5);ctx.lineTo(sx-TW/2+10,sy);ctx.closePath();ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(220,207,145,.28)';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('+',sx,sy+5);}
+  }
+
+  // Bright highlight for the currently-selected empty compound plot, so a click
+  // on open ground reads as selected the way a facility does.
+  function selectedTile(sx, sy) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - TH / 2); ctx.lineTo(sx + TW / 2, sy);
+    ctx.lineTo(sx, sy + TH / 2); ctx.lineTo(sx - TW / 2, sy); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,224,138,.16)'; ctx.fill();
+    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.restore();
   }
 
   function compoundPerimeter(points) {
@@ -189,60 +216,51 @@ export function createView(canvas) {
     }
   }
 
-  function building(sx, sy, f) {
-    const info=facInfo(f.type),base=f.powered?facColor(f.type):GREY,h=hOf(f.level),hw=(TW/2)*INSET,hh=(TH/2)*INSET;
+  function building(sx, sy, f, labels) {
+    const info=facInfo(f.type),base=f.powered?facColor(f.type):GREY,hw=(TW/2)*INSET,hh=(TH/2)*INSET;
     facilityModel(sx,sy,f,base);
     if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh-5);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
-    const label=shortName(info.name);ctx.font='bold 11px system-ui,sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(label,sx,sy+hh+15);ctx.fillStyle=f.powered?'#f4ead2':'#c9bfae';ctx.fillText(label,sx,sy+hh+15);
-    ctx.fillStyle='rgba(8,12,10,.72)';ctx.fillRect(sx-13,sy+hh+18,26,12);ctx.fillStyle='#d7bf55';ctx.font='bold 10px system-ui,sans-serif';ctx.fillText('Lv '+f.level,sx,sy+hh+27);
+    // labels stay upright regardless of view rotation — drawn in a screen-space pass
+    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy + hh + 4, powered: f.powered });
   }
 
-  // construction indicator + live countdown badge over an in-progress build
-  function buildBadge(sx, sy, f, b) {
-    const h = hOf(f.level);
-    const hw = (TW / 2) * INSET, hh = (TH / 2) * INSET;
-    // dashed cyan roof outline = under construction
-    ctx.save();
-    ctx.setLineDash([4, 3]); ctx.strokeStyle = '#67d5e0'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(sx, sy - hh - h); ctx.lineTo(sx + hw, sy - h);
-    ctx.lineTo(sx, sy + hh - h); ctx.lineTo(sx - hw, sy - h);
-    ctx.closePath(); ctx.stroke();
-    ctx.restore();
-
+  // upright construction countdown badge (screen space, constant size)
+  function buildBadgeScreen(px, py, b) {
     const remaining = b.due - Date.now() / 1000;
     const txt = remaining > 0 ? '⏳ ' + fmtDuration(remaining) + '  → L' + b.toLevel : '✓ finishing…';
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'center';
     const w = ctx.measureText(txt).width + 16;
-    const bx = sx - w / 2, by = sy - hh - h - 32;
+    const bx = px - w / 2, by = py - 58;
     ctx.fillStyle = 'rgba(12,30,34,0.92)';
     ctx.beginPath(); ctx.roundRect(bx, by, w, 19, 5); ctx.fill();
     ctx.strokeStyle = '#67d5e0'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.roundRect(bx, by, w, 19, 5); ctx.stroke();
     ctx.fillStyle = '#c9f2f6';
-    ctx.fillText(txt, sx, by + 13.5);
+    ctx.fillText(txt, px, by + 13.5);
   }
 
+  const TITLE_Y = 108;   // below the OG header bar
   function title(state) {
     ctx.textAlign = 'left';
     ctx.font = 'bold 20px system-ui, sans-serif';
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillText(state.name, 17, 31);
+    ctx.fillText(state.name, 17, TITLE_Y + 1);
     ctx.fillStyle = '#f4ead2';
-    ctx.fillText(state.name, 16, 30);
+    ctx.fillText(state.name, 16, TITLE_Y);
     ctx.font = '12px system-ui, sans-serif';
     ctx.fillStyle = '#d9c9a8';
-    ctx.fillText(`Level ${state.level} · ${state.points} pts · (${state.location.x}|${state.location.y})`, 16, 48);
+    ctx.fillText(`Level ${state.level} · ${state.points} pts · (${state.location.x}|${state.location.y})`, 16, TITLE_Y + 18);
   }
 
   function render(state) {
     ctx.clearRect(0, 0, W, H);
     sky();
-    ctx.save();ctx.translate(W/2,H/2);ctx.scale(cam.zoom,cam.zoom);ctx.translate(-W/2,-H/2);
+    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(cam.rot);ctx.scale(cam.zoom,cam.zoom);ctx.translate(-W/2,-H/2);
 
     const placed = layout(state.facilities);
     const gw=state.grid?.w||7,gh=state.grid?.h||7,gridCells=[];for(let r=0;r<gh;r++)for(let c=0;c<gw;c++)gridCells.push({r,c});
+    gridDims={w:gw,h:gh};
     // center the full compound grid
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const cell of gridCells) {
@@ -256,35 +274,47 @@ export function createView(canvas) {
     // painter's order: back (small r+c) to front
     placed.sort((a, b) => (a.r + a.c) - (b.r + b.c));
     const compoundPoints=[];emptyPlacements=[];const occupied=new Set(placed.map(f=>`${f.c}|${f.r}`));
+    let selCell=null;
     for (const cell of gridCells) {
       const [ox, oy] = isoXY(cell.r, cell.c);
       const sx = originX + ox, sy = originY + oy;
       compoundPoints.push({sx,sy});
-      const isEmpty=!occupied.has(`${cell.c}|${cell.r}`);tilePlate(sx,sy,true,isEmpty);if(isEmpty)emptyPlacements.push({empty:true,gridX:cell.c,gridY:cell.r,sx,sy});
+      const isEmpty=!occupied.has(`${cell.c}|${cell.r}`);tilePlate(sx,sy,true,isEmpty);if(isEmpty){emptyPlacements.push({empty:true,gridX:cell.c,gridY:cell.r,sx,sy});if(selectedCell&&selectedCell.gx===cell.c&&selectedCell.gy===cell.r)selCell={sx,sy};}
     }
+    if(selCell)selectedTile(selCell.sx,selCell.sy);
     compoundPerimeter(compoundPoints);
     const buildMap = new Map((state.builds || []).map((b) => [b.slot, b]));
     placements = [];
     const badges = [];
+    const labels = [];
     for (const f of placed) {
       const [ox, oy] = isoXY(f.r, f.c);
       const sx = originX + ox, sy = originY + oy;
       placements.push({ slot: f.slot, type: f.type, sx, sy, level: f.level });
-      building(sx, sy, f);
+      building(sx, sy, f, labels);
       const b = buildMap.get(f.slot);
-      if (b) badges.push({ sx, sy, f, b });
+      if (b) badges.push({ sx, sy, b });
     }
-    for (const a of badges) buildBadge(a.sx, a.sy, a.f, a.b);   // on top of all buildings
+    ctx.restore();
+    // screen-space pass: upright labels, badges, and the night tint (covers all corners under rotation)
+    ctx.textAlign = 'center';
+    for (const l of labels) {
+      const [px, py] = rotP(l.sx, l.sy, cam.zoom);
+      ctx.font = 'bold 11px system-ui,sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)';
+      ctx.strokeText(l.text, px, py + 11); ctx.fillStyle = l.powered ? '#f4ead2' : '#c9bfae'; ctx.fillText(l.text, px, py + 11);
+      ctx.fillStyle = 'rgba(8,12,10,.72)'; ctx.fillRect(px - 13, py + 14, 26, 12);
+      ctx.fillStyle = '#d7bf55'; ctx.font = 'bold 10px system-ui,sans-serif'; ctx.fillText('Lv ' + l.lv, px, py + 23);
+    }
+    for (const a of badges) { const [px, py] = rotP(a.sx, a.sy, cam.zoom); buildBadgeScreen(px, py, a.b); }
     if (state.world?.phase === 'night') {
       ctx.fillStyle = 'rgba(12,18,42,.28)';
       ctx.fillRect(0, 0, W, H);
     }
-    ctx.restore();
     title(state);
   }
 
   // --- the wasteland: a 50x50 ruined city under per-player fog (P3 discovery) ---
-  const WS = 0.64;                 // readable city blocks while still showing a large district
+  const WS = WORLD_SCALE;          // readable city blocks while still showing a large district
   let worldPlacements = [];        // [{t, sx, sy}] captured each render, for hit-testing
 
   function microBuilding(sx,sy,hw,hh,h,color,seed,lit=true){
@@ -338,7 +368,7 @@ export function createView(canvas) {
   function renderWorld(map) {
     ctx.clearRect(0, 0, W, H);
     sky();
-    ctx.save();ctx.translate(W/2,H/2);ctx.scale(cam.worldZoom,cam.worldZoom);ctx.translate(-W/2,-H/2);
+    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(cam.rot);ctx.scale(cam.worldZoom,cam.worldZoom);ctx.translate(-W/2,-H/2);
     const originX = W / 2 + cam.x/cam.worldZoom, originY = H / 2 - 20 + cam.y/cam.worldZoom;
     const hw = (TW / 2) * WS * 0.94, hh = (TH / 2) * WS * 0.94;
 
@@ -347,8 +377,8 @@ export function createView(canvas) {
       const [ox, oy] = isoXY(t.y - (map.world.h+1)/2, t.x - (map.world.w+1)/2);
       const sx = originX + ox * WS, sy = originY + oy * WS;
       worldPlacements.push({ t, sx, sy });
-      const screenX=W/2+(sx-W/2)*cam.worldZoom,screenY=H/2+(sy-H/2)*cam.worldZoom;
-      if(screenX<-55||screenX>W+55||screenY<-70||screenY>H+70)continue;
+      const [screenX,screenY]=rotP(sx,sy,cam.worldZoom);
+      if(screenX<-80||screenX>W+80||screenY<-90||screenY>H+90)continue;
 
       const seed = t.x * 97 + t.y * 193;
       cityGround(sx, sy, hw, hh, t, seed);
@@ -374,46 +404,49 @@ export function createView(canvas) {
       }
     }
 
-    ctx.textAlign='center';for(const {t,sx,sy} of worldPlacements){if(!t.districtHub)continue;ctx.font='bold 14px system-ui, sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(4,9,8,.78)';ctx.strokeText(t.districtHub,sx,sy+5);ctx.fillStyle=t.seen?'rgba(226,215,177,.82)':'rgba(133,151,133,.48)';ctx.fillText(t.districtHub,sx,sy+5);}
+    ctx.restore();
+    // --- screen-space pass: labels and squad markers stay upright under rotation ---
+    const z = cam.worldZoom;
+    ctx.textAlign='center';for(const {t,sx,sy} of worldPlacements){if(!t.districtHub)continue;const[px,py]=rotP(sx,sy,z);ctx.font='bold 14px system-ui, sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(4,9,8,.78)';ctx.strokeText(t.districtHub,px,py+5);ctx.fillStyle=t.seen?'rgba(226,215,177,.82)':'rgba(133,151,133,.48)';ctx.fillText(t.districtHub,px,py+5);}
 
-    // labels last, above the skyline
-    ctx.textAlign = 'center';
     for (const { t, sx, sy } of worldPlacements) {
       if (!t.seen) continue;
+      const [px, py] = rotP(sx, sy, z);
+      if (px < -40 || px > W + 40 || py < -40 || py > H + 40) continue;
       const label = t.home ? '★ ' + t.name : (t.landmark ? t.landmark.name : shortName(t.name));
       ctx.font = (t.home || t.landmark ? 'bold 11px ' : '10px ') + 'system-ui, sans-serif';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.65)';
-      ctx.strokeText(label, sx, sy + 15);
+      ctx.strokeText(label, px, py + 15 * z + 6);
       ctx.fillStyle = t.home ? '#fff' : (t.landmark ? '#e8cc82' : '#e8dcc4');
-      ctx.fillText(label, sx, sy + 15);
+      ctx.fillText(label, px, py + 15 * z + 6);
     }
 
     for (const squad of (map.squads || (map.squad ? [map.squad] : []))) {
       const here = worldPlacements.find((p) => p.t.x === squad.x && p.t.y === squad.y);
       const target = squad.traveling ? worldPlacements.find((p) => p.t.x === squad.targetX && p.t.y === squad.targetY) : null;
-      let markerX=here?.sx,markerY=here?.sy;
+      let markerX, markerY;
+      if (here) [markerX, markerY] = rotP(here.sx, here.sy, z);
       if (here && target) {
+        const [hx, hy] = rotP(here.sx, here.sy, z), [tx2, ty2] = rotP(target.sx, target.sy, z);
         const duration=Math.max(1,squad.arrivesAt-squad.startedAt),progress=Math.max(0,Math.min(1,(Date.now()/1000-squad.startedAt)/duration));
-        markerX=here.sx+(target.sx-here.sx)*progress;markerY=here.sy+(target.sy-here.sy)*progress;
-        const active=squad.id===map.squad?.id;ctx.strokeStyle=active?'rgba(235,205,91,.7)':'rgba(125,175,190,.55)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(here.sx,here.sy);ctx.lineTo(target.sx,target.sy);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=active?'#d7bf55':'#7fabb5';ctx.strokeRect(target.sx-7,target.sy-7,14,14);
-        for(let i=1;i<=3;i++){const p=Math.max(0,progress-i*.045);ctx.fillStyle=active?`rgba(215,191,85,${.42-i*.09})`:`rgba(120,175,190,${.42-i*.09})`;ctx.beginPath();ctx.arc(here.sx+(target.sx-here.sx)*p,here.sy+(target.sy-here.sy)*p,2,0,Math.PI*2);ctx.fill();}
+        markerX=hx+(tx2-hx)*progress;markerY=hy+(ty2-hy)*progress;
+        const active=squad.id===map.squad?.id;ctx.strokeStyle=active?'rgba(235,205,91,.7)':'rgba(125,175,190,.55)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(tx2,ty2);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=active?'#d7bf55':'#7fabb5';ctx.strokeRect(tx2-7,ty2-7,14,14);
+        for(let i=1;i<=3;i++){const p=Math.max(0,progress-i*.045);ctx.fillStyle=active?`rgba(215,191,85,${.42-i*.09})`:`rgba(120,175,190,${.42-i*.09})`;ctx.beginPath();ctx.arc(hx+(tx2-hx)*p,hy+(ty2-hy)*p,2,0,Math.PI*2);ctx.fill();}
       }
       if (Number.isFinite(markerX)&&Number.isFinite(markerY)) { const active=squad.id===map.squad?.id;ctx.fillStyle=active?(squad.traveling?'#ffd75a':'#eef0c6'):'#83b4bf';ctx.beginPath();ctx.arc(markerX,markerY,active?7:6,0,Math.PI*2);ctx.fill();ctx.strokeStyle=active?'#ffe07b':'#18211c';ctx.lineWidth=active?2.5:2;ctx.stroke();ctx.fillStyle='#18211c';ctx.font='bold 8px system-ui';ctx.textAlign='center';ctx.fillText((squad.name||'S')[0],markerX,markerY+3);ctx.font='9px system-ui';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(squad.name,markerX,markerY-10);ctx.fillStyle=active?'#ffe28a':'#b8d4d7';ctx.fillText(squad.name,markerX,markerY-10); }
     }
-
-    ctx.restore();
     const seen = map.tiles.filter((t) => t.seen).length;
     ctx.textAlign = 'left';
     ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('Berlin Exclusion Zone', 17, 31);
-    ctx.fillStyle = '#f4ead2'; ctx.fillText('Berlin Exclusion Zone', 16, 30);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('Berlin Exclusion Zone', 17, TITLE_Y + 1);
+    ctx.fillStyle = '#f4ead2'; ctx.fillText('Berlin Exclusion Zone', 16, TITLE_Y);
     ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = '#d9c9a8';
-    ctx.fillText(`${map.squad?.name||'Squad'} selected · ${seen} of ${map.tiles.length} places known nearby · click a dashed tile to explore`, 16, 48);
+    ctx.fillText(`${map.squad?.name||'Squad'} selected · ${seen} of ${map.tiles.length} places known nearby · click a dashed tile to explore`, 16, TITLE_Y + 18);
   }
 
   // hit-test the world map: screen px -> tile (diamond test). null if none.
   function worldPick(x, y) {
-    x=W/2+(x-W/2)/cam.worldZoom;y=H/2+(y-H/2)/cam.worldZoom;
+    [x, y] = unrotP(x, y, cam.worldZoom);
     const hw = (TW / 2) * WS * 0.94, hh = (TH / 2) * WS * 0.94;
     for (let i = worldPlacements.length - 1; i >= 0; i--) {
       const p = worldPlacements[i];
@@ -424,7 +457,7 @@ export function createView(canvas) {
 
   // hit-test screen px -> facility (front-most first). null if empty space.
   function pick(x, y) {
-    x=W/2+(x-W/2)/cam.zoom;y=H/2+(y-H/2)/cam.zoom;
+    [x, y] = unrotP(x, y, cam.zoom);
     for (let i = placements.length - 1; i >= 0; i--) {
       const p = placements[i];
       const hw = (TW / 2) * INSET, hh = (TH / 2) * INSET, h = hOf(p.level);
@@ -433,9 +466,20 @@ export function createView(canvas) {
     for(let i=emptyPlacements.length-1;i>=0;i--){const p=emptyPlacements[i],hw=TW/2,hh=TH/2;if(Math.abs(x-p.sx)/hw+Math.abs(y-p.sy)/hh<=1)return p;}
     return null;
   }
-  function setSelected(slot) { selected = slot; }
+  // Facility and empty-plot selection are mutually exclusive.
+  function setSelected(slot) { selected = slot; if (slot != null) selectedCell = null; }
+  function setSelectedCell(gx, gy) { selectedCell = (gx == null ? null : { gx, gy }); if (selectedCell) selected = null; }
 
   function setZoom(value){cam.zoom=Math.max(.55,Math.min(1.7,value));}
   function setWorldZoom(value){cam.worldZoom=Math.max(.42,Math.min(2.2,value));}
-  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setZoom, setWorldZoom };
+  function setRotation(rad){cam.rot=rad%(Math.PI*2);}
+  // center the compound camera on a grid cell (facility-list jump)
+  function centerCompoundOn(gridX, gridY) {
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(let r=0;r<gridDims.h;r++)for(let c=0;c<gridDims.w;c++){const[ox,oy]=isoXY(r,c);if(ox<minX)minX=ox;if(ox>maxX)maxX=ox;if(oy<minY)minY=oy;if(oy>maxY)maxY=oy;}
+    const [ox,oy]=isoXY(gridY,gridX);
+    cam.x=(minX+maxX)/2-ox;
+    cam.y=(minY+maxY)/2-oy+30;
+  }
+  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn };
 }

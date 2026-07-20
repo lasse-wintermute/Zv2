@@ -18,11 +18,39 @@ function zv2_refresh_production(int $uid):void{global $db;$now=time();$r=$db->qu
 function zv2_refresh_training(int $uid):void{global $db;$now=time();$r=$db->query("SELECT survivor_id,focus FROM training_jobs WHERE userid=$uid AND due<=$now");while($r&&($j=$r->fetch_assoc())){$id=(int)$j['survivor_id'];$field=$j['focus']==='defense'?'defense_stat':'attack_stat';$cap=$field==='attack_stat'?10:8;$db->query("UPDATE survivors SET $field=LEAST($cap,$field+1),fatigue=LEAST(100,fatigue+15) WHERE id=$id AND userid=$uid");$db->query("DELETE FROM training_jobs WHERE survivor_id=$id");}}
 function zv2_refresh_research(int $uid,array $buildings=[]):void{
     global $db;$now=time();$db->query("INSERT IGNORE INTO research_state(userid,points,last_tick) VALUES($uid,30,$now)");
-    $done=$db->query("SELECT tech_id FROM research_jobs WHERE userid=$uid AND due<=$now LIMIT 1");if($done&&$done->num_rows){$tech=(int)$done->fetch_assoc()['tech_id'];$db->query("INSERT IGNORE INTO player_research(userid,tech_id,completed_at) VALUES($uid,$tech,$now)");$db->query("DELETE FROM research_jobs WHERE userid=$uid");}
-    $state=$db->query("SELECT points,last_tick FROM research_state WHERE userid=$uid LIMIT 1")->fetch_assoc();$elapsed=max(0,$now-(int)$state['last_tick']);$center=(int)($buildings[12]??0);$workers=0;if($center>0){$w=$db->query("SELECT COUNT(*) n FROM survivors WHERE userid=$uid AND job_facility=12 AND hp>0 AND fatigue<90");$workers=$w?(int)$w->fetch_assoc()['n']:0;}$rate=$center>0?2+$center*2+$workers*12:0;$points=min(9999,(float)$state['points']+$rate*$elapsed/3600);$db->query("UPDATE research_state SET points=$points,last_tick=$now WHERE userid=$uid");
+    $done=$db->query("SELECT tech_id FROM research_jobs WHERE userid=$uid AND due<=$now LIMIT 1");if($done&&$done->num_rows){$tech=(int)$done->fetch_assoc()['tech_id'];$db->query("INSERT IGNORE INTO player_research(userid,tech_id,completed_at) VALUES($uid,$tech,$now)");$db->query("DELETE FROM research_jobs WHERE userid=$uid");$tr=$db->query("SELECT tier FROM technologies WHERE id=$tech LIMIT 1");if($tr&&$tr->num_rows)$db->query("UPDATE strongholds SET points=points+".(int)$tr->fetch_assoc()['tier']." WHERE userid=$uid");}
+    $state=$db->query("SELECT points,last_tick FROM research_state WHERE userid=$uid LIMIT 1")->fetch_assoc();$elapsed=max(0,$now-(int)$state['last_tick']);$center=(int)($buildings[12]??0);$workers=0;if($center>0){$w=$db->query("SELECT COUNT(*) n FROM survivors WHERE userid=$uid AND job_facility=12 AND hp>0 AND fatigue<90");$workers=$w?(int)$w->fetch_assoc()['n']:0;}$rate=$center>0?2+$center*2+$workers*12:0;$points=min(999999,(float)$state['points']+$rate*$elapsed/3600);$db->query("UPDATE research_state SET points=$points,last_tick=$now WHERE userid=$uid");
 }
 
-function zv2_staff_effects(int $uid,array $buildings=[]):array{
+// OG power model: every facility drains power by level (facilities.power_req
+// curves), the generator produces by the original output curve, and the ratio
+// (outputlevel) linearly scales ALL production — a brownout slows, never stops.
+const ZV2_POWER_CURVES=[
+    'A'=>[5,10,20,30,40,50,70,100,140,200],      // life support, scrapyard, garage, staff area
+    'B'=>[10,20,40,60,80,100,140,200,280,400],   // toolshop, research center, HQ
+    'C'=>[0,5,10,15,20,25,35,50,70,100],         // storage, fortifications, troop quarters
+];
+const ZV2_POWER_MAP=[1=>'A',2=>'A',3=>'A',13=>'A',11=>'B',12=>'B',17=>'B',4=>'C',8=>'C',10=>'C'];
+// OG `outputadjustable`: these facilities can be throttled, and the activity %
+// scales their power draw, their production AND their job capacity together.
+const ZV2_ADJUSTABLE=[1,2,3,4,11,12];
+function zv2_activity(string $encoded):array{
+    $a=pipe_nums($encoded);$out=[];
+    for($i=0;$i<=45;$i++){$v=$a[$i]??1;$out[$i]=max(0.0,min(1.0,(float)$v));}
+    return $out;
+}
+function zv2_facility_drain(int $slot,int $level,float $activity=1.0):int{
+    if($level<=0||!isset(ZV2_POWER_MAP[$slot]))return 0;
+    return (int)round(ZV2_POWER_CURVES[ZV2_POWER_MAP[$slot]][min(9,$level-1)]*$activity);
+}
+function zv2_power_model(array $buildings,array $activity=[]):array{
+    $drain=0;foreach(ZV2_POWER_MAP as$slot=>$c)$drain+=zv2_facility_drain($slot,(int)($buildings[$slot]??0),$activity[$slot]??1.0);
+    $genCurve=[15,40,80,145,250,420,695,1140,1880,3065];$gen=(int)($buildings[9]??0);
+    $output=10+($gen>0?$genCurve[min(9,$gen-1)]:0);   // base 10 like the OG starting stronghold
+    return[$drain,$output];
+}
+
+function zv2_staff_effects(int $uid,array $buildings=[],array $activity=[]):array{
     global $db;$life=max(0,(int)($buildings[1]??0));$scrap=max(0,(int)($buildings[2]??0));$garage=max(0,(int)($buildings[3]??0));
     $workers=[];$rate=[1+$life*.15,1+$life*.15,1+$scrap*.20,1+$scrap*.20,1+$garage*.20];$power=0;$medical=0;$craft=0;$defense=(int)($buildings[8]??0)*4;
     $r=$db->query("SELECT s.job_facility,s.attack_stat,s.defense_stat FROM survivors s WHERE s.userid=$uid AND s.job_facility IS NOT NULL AND s.hp>0 AND s.fatigue<90");
@@ -38,17 +66,46 @@ function zv2_staff_effects(int $uid,array $buildings=[]):array{
     $tech=zv2_tech_effects($uid);$rate[0]*=1+($tech['water_rate']??0)/100;$rate[1]*=1+($tech['food_rate']??0)/100;$rate[4]*=1+($tech['petrol_rate']??0)/100;
     $started=$db->query("SELECT world_started FROM strongholds WHERE userid=$uid LIMIT 1");$age=$started&&$started->num_rows?max(0,time()-(int)$started->fetch_assoc()['world_started']):999999;$starterBoost=$age<7200?4:($age<28800?2:1);foreach($rate as$i=>$value)$rate[$i]=$value*$starterBoost;
     $power+=(int)($tech['power_bonus']??0);$defense+=(int)($tech['defense_bonus']??0);$fort=$db->query("SELECT COALESCE(SUM(GREATEST(0,v.amount-COALESCE(se.assigned,0))*i.defense_bonus),0) n FROM inventory v JOIN items i ON i.id=v.item_id LEFT JOIN (SELECT q.userid,se.item_id,SUM(se.amount) assigned FROM squad_equipment se JOIN squads q ON q.id=se.squad_id GROUP BY q.userid,se.item_id) se ON se.item_id=v.item_id AND se.userid=v.userid WHERE v.userid=$uid");if($fort)$defense+=(int)$fort->fetch_assoc()['n'];
-    return['workers'=>$workers,'rate'=>$rate,'starterBoost'=>$starterBoost,'power'=>$power,'medical'=>$medical,'craftDiscount'=>min(2,$craft),'defense'=>$defense,'tech'=>$tech];
+    // OG activity throttle: each producing facility's output scales with its %
+    $rate[0]*=$activity[1]??1.0;$rate[1]*=$activity[1]??1.0;        // Life support → water/food
+    $rate[2]*=$activity[2]??1.0;$rate[3]*=$activity[2]??1.0;        // Scrapyard → wood/metal
+    $rate[4]*=$activity[3]??1.0;                                    // Garage → petrol
+    [$drain,$output]=zv2_power_model($buildings,$activity);$output+=$power;   // engineers + tech add generation
+    $powerLevel=$drain>0?min(1.0,$output/$drain):1.0;
+    foreach($rate as$i=>$value)$rate[$i]=$value*$powerLevel;        // OG brownout: scales all production
+    return['workers'=>$workers,'rate'=>$rate,'starterBoost'=>$starterBoost,'power'=>$output,'drain'=>$drain,'powerLevel'=>$powerLevel,'medical'=>$medical,'craftDiscount'=>min(2,$craft),'defense'=>$defense,'tech'=>$tech];
+}
+
+// Zombilization storage caps: food by Life support, wood/metal by Scrapyard, petrol by
+// Garage, each level^2.5*100 (floor 100). Water is the original's money slot: uncapped.
+function zv2_storage_caps(array $buildings):array{
+    $cap=fn(int $lvl):float=>max(100.0,pow(max(1,$lvl),2.5)*100);
+    $life=(int)($buildings[1]??0);$scrap=(int)($buildings[2]??0);$garage=(int)($buildings[3]??0);
+    return[1000000000.0,$cap($life),$cap($scrap),$cap($scrap),$cap($garage)];
 }
 
 function zv2_world_clock(array $s):array{
     $now=time();$start=(int)($s['world_started']??$now);if($start<=0)$start=$now;$elapsed=max(0,$now-$start);$within=$elapsed%ZV2_CYCLE_SECONDS;$phase=$within<ZV2_DAY_SECONDS?'day':'night';$next=$now+($phase==='day'?ZV2_DAY_SECONDS-$within:ZV2_CYCLE_SECONDS-$within);$day=(int)floor($elapsed/ZV2_CYCLE_SECONDS)+1;
-    return['phase'=>$phase,'day'=>$day,'nextPhaseAt'=>$next,'secondsToPhase'=>$next-$now,'raidCycle'=>(int)floor(($elapsed+ZV2_DAY_SECONDS)/ZV2_CYCLE_SECONDS)];
+    // Hordes only muster every 3rd night (~once per real hour) so the economy
+    // can outpace the pressure; the day/night rhythm itself stays at 20 minutes.
+    return['phase'=>$phase,'day'=>$day,'nextPhaseAt'=>$next,'secondsToPhase'=>$next-$now,'raidCycle'=>(int)floor(($elapsed+ZV2_DAY_SECONDS)/(ZV2_CYCLE_SECONDS*3))];
 }
 
 function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):array{
-    global $db;$threat=7+$day*2+(($uid*17+$day*13)%6);$defense=(int)$effects['defense'];$breach=max(0,$threat-$defense);$loss=$breach*4;$wounded=null;$damage=0;
-    if($breach>0){for($i=0;$i<4;$i++)$resources[$i]=max(0,(float)($resources[$i]??0)-$loss);$q=$db->query("SELECT id,hp FROM survivors WHERE userid=$uid AND hp>0 ORDER BY job_facility IS NULL DESC,id LIMIT 1");if($q&&$q->num_rows){$sv=$q->fetch_assoc();$wounded=(int)$sv['id'];$damage=min((int)$sv['hp'],max(1,(int)ceil($breach/2)));$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$damage),fatigue=LEAST(100,fatigue+10) WHERE id=$wounded");}}
+    // The nightly zombie horde. Pressure builds over the first ~12 days, then
+    // plateaus so an aging world stays survivable. OG-faithful consequences:
+    // zombies FIGHT the stronghold (casualties among your people) — they don't
+    // steal supplies. The only stock loss is food devoured in the breach,
+    // capped at 20% of the store (original stronghold theft was players-only).
+    // 6-day grace: scattered infected only (threat 5–10) while the compound is
+    // young; real pressure ramps afterwards and plateaus around 29–34.
+    global $db;$threat=5+min(12,max(0,$day-6))*2+(($uid*17+$day*13)%6);$defense=(int)$effects['defense'];$breach=max(0,$threat-$defense);$loss=0;$wounded=null;$damage=0;
+    if($breach>0){
+        $loss=min($breach*2,(int)floor((float)($resources[1]??0)*.2));$resources[1]=max(0,(float)($resources[1]??0)-$loss);
+        $victims=1+(int)floor($breach/12);
+        $q=$db->query("SELECT id,hp FROM survivors WHERE userid=$uid AND hp>0 ORDER BY job_facility IS NULL DESC,id LIMIT $victims");
+        while($q&&($sv=$q->fetch_assoc())){$vid=(int)$sv['id'];$hit=min((int)$sv['hp'],max(1,(int)ceil($breach/2)));if($wounded===null){$wounded=$vid;$damage=$hit;}$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$hit),fatigue=LEAST(100,fatigue+10) WHERE id=$vid");}
+    }
     $success=$breach===0?1:0;$wid=$wounded===null?'NULL':(string)$wounded;$now=time();$db->query("INSERT INTO raids(userid,day_number,threat,defense,success,resource_loss,wounded_survivor,damage,created_at) VALUES($uid,$day,$threat,$defense,$success,$loss,$wid,$damage,$now) ON DUPLICATE KEY UPDATE threat=VALUES(threat),defense=VALUES(defense),success=VALUES(success),resource_loss=VALUES(resource_loss),wounded_survivor=VALUES(wounded_survivor),damage=VALUES(damage),created_at=VALUES(created_at)");
     return['day'=>$day,'threat'=>$threat,'defense'=>$defense,'success'=>(bool)$success,'resourceLoss'=>$loss,'woundedSurvivor'=>$wounded,'damage'=>$damage];
 }
@@ -72,11 +129,15 @@ function zv2_refresh_hospital(int $uid,array $buildings):void{
 }
 
 function zv2_refresh(int $uid):void{
-    global $db;$r=$db->query('SELECT ressis,rates,last_tick,buildings,world_started,last_raid_cycle FROM strongholds WHERE userid='.$uid.' LIMIT 1');if(!$r||!$r->num_rows)return;$s=$r->fetch_assoc();$now=time();$elapsed=max(0,$now-(int)$s['last_tick']);
-    $buildings=pipe_nums($s['buildings']);$q=$db->query('SELECT slot,to_level FROM builds WHERE userid='.$uid.' AND due<='.$now);while($q&&($b=$q->fetch_assoc()))$buildings[(int)$b['slot']]=(int)$b['to_level'];$db->query('DELETE FROM builds WHERE userid='.$uid.' AND due<='.$now);zv2_refresh_research($uid,$buildings);zv2_refresh_production($uid);zv2_refresh_training($uid);zv2_refresh_hospital($uid,$buildings);
-    $effects=zv2_staff_effects($uid,$buildings);$res=pipe_nums($s['ressis']);$rates=pipe_nums($s['rates']);for($i=0;$i<5;$i++)$res[$i]=round(min(10000,($res[$i]??0)+($rates[$i]??0)*$effects['rate'][$i]*$elapsed/3600),3);
+    global $db;$r=$db->query('SELECT ressis,rates,last_tick,buildings,activebuildings,world_started,last_raid_cycle FROM strongholds WHERE userid='.$uid.' LIMIT 1');if(!$r||!$r->num_rows)return;$s=$r->fetch_assoc();$now=time();$elapsed=max(0,$now-(int)$s['last_tick']);$activity=zv2_activity((string)$s['activebuildings']);
+    $buildings=pipe_nums($s['buildings']);$points=0;$q=$db->query('SELECT slot,to_level FROM builds WHERE userid='.$uid.' AND due<='.$now);while($q&&($b=$q->fetch_assoc())){$buildings[(int)$b['slot']]=(int)$b['to_level'];$points+=(int)$b['to_level'];}$db->query('DELETE FROM builds WHERE userid='.$uid.' AND due<='.$now);if($points)$db->query("UPDATE strongholds SET points=points+$points WHERE userid=$uid");zv2_refresh_research($uid,$buildings);zv2_refresh_production($uid);zv2_refresh_training($uid);zv2_refresh_hospital($uid,$buildings);
+    $effects=zv2_staff_effects($uid,$buildings,$activity);$res=pipe_nums($s['ressis']);$rates=pipe_nums($s['rates']);$caps=zv2_storage_caps($buildings);for($i=0;$i<5;$i++)$res[$i]=round(min($caps[$i],($res[$i]??0)+($rates[$i]??0)*$effects['rate'][$i]*$elapsed/3600),3);
+    // OG: every survivor eats 3 food/day; an empty larder wears everyone down.
+    $alive=(int)$db->query("SELECT COUNT(*) n FROM survivors WHERE userid=$uid AND hp>0")->fetch_assoc()['n'];
+    if($alive>0&&$elapsed>0){$res[1]=round(max(0,($res[1]??0)-$alive*3*$elapsed/86400),3);
+        if(($res[1]??0)<=0)$db->query("UPDATE survivors SET fatigue=LEAST(100,fatigue+".round($elapsed/3600*5,3).") WHERE userid=$uid AND hp>0");}
     if($elapsed>0){$hours=$elapsed/3600;$db->query("UPDATE survivors SET fatigue=CASE WHEN job_facility IS NULL THEN GREATEST(0,fatigue-".($hours*30).") ELSE LEAST(100,fatigue+".($hours*18).") END WHERE userid=$uid");if($effects['medical']>0){$patients=$db->query("SELECT s.id,s.hp,s.max_hp,s.recovery_progress FROM survivors s LEFT JOIN hospital_treatments ht ON ht.survivor_id=s.id WHERE s.userid=$uid AND s.job_facility IS NULL AND s.hp<s.max_hp AND ht.survivor_id IS NULL");$recovery=1+(($effects['tech']['recovery_rate']??0)/100);while($patients&&($p=$patients->fetch_assoc())){$progress=(float)$p['recovery_progress']+$elapsed*$effects['medical']*$recovery/300;$heal=(int)floor($progress);$progress-=$heal;$newHp=min((int)$p['max_hp'],(int)$p['hp']+$heal);$db->query("UPDATE survivors SET hp=$newHp,recovery_progress=$progress WHERE id=".(int)$p['id']);}}}
-    $clock=zv2_world_clock($s);$last=(int)$s['last_raid_cycle'];if($clock['raidCycle']>$last){zv2_resolve_raid($uid,$clock['day'],$res,$effects);$last=$clock['raidCycle'];}
+    $clock=zv2_world_clock($s);$last=min((int)$s['last_raid_cycle'],$clock['raidCycle']);/* self-heal counters saved under the old nightly cadence */if($clock['raidCycle']>$last){zv2_resolve_raid($uid,$clock['day'],$res,$effects);$last=$clock['raidCycle'];}
     $rs=$db->real_escape_string(implode('|',$res));$bs=$db->real_escape_string(implode('|',$buildings));$db->query("UPDATE strongholds SET ressis='$rs',buildings='$bs',last_tick=$now,last_raid_cycle=$last WHERE userid=$uid");
 }
 

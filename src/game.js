@@ -7,11 +7,14 @@ export function fromApi(resp) {
   return {
     id: s.id,
     name: s.name,
+    emblem: s.emblem || '🏚',
     level: s.level,
     points: s.points,
     location: s.location,
-    resources: s.resources,      // { key: {amount, cap, perHour} }
-    power: s.power,              // { generated, used }
+    resources: s.resources,      // { key: {amount, cap, perHour, productionPerHour?, consumptionPerHour?} }
+    power: s.power,              // { generated, used, level }
+    jobs: s.jobs || [],          // live queue: [{type,label,due,cancelable,ref}]
+    survivorsAlive: s.survivorsAlive ?? null,
     population: s.population,
     facilities: s.facilities,    // [ {slot,type,level,active,powered} ]
     grid: s.grid || { w: 7, h: 7 },
@@ -30,9 +33,9 @@ export function resourceAmount(state, key) {
   const r = state.resources[key];
   if (!r) return 0;
   const elapsedH = Math.max(0, Date.now() / 1000 - state.fetchedAt) / 3600;
-  return Math.min(r.cap, r.amount + r.perHour * elapsedH);
+  return Math.max(0, Math.min(r.cap, r.amount + r.perHour * elapsedH));
 }
 
 export function brownout(state) {
-  return state.power && state.power.used > state.power.generated;
+  return state.power && (state.power.level != null ? state.power.level < 100 : state.power.used > state.power.generated);
 }

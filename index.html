@@ -7,23 +7,34 @@
   </head>
   <body>
     <canvas id="game"></canvas>
+    <header id="gameheader" class="gameheader"></header>
     <div id="hud" class="hud"></div>
+    <div id="queue" class="queue"></div>
     <div id="status" class="status"></div>
     <div id="panel" class="panel"></div>
     <div id="zoomcontrols" class="zoomcontrols" aria-label="Map zoom"><button data-zoom="out" title="Zoom out">-</button><button data-zoom="in" title="Zoom in">+</button></div>
-    <button id="modebtn" class="modebtn">🗺 World map</button>
-    <button id="newgamebtn" class="newgamebtn" title="Start a new survivor">⟳ New game</button>
+    <canvas id="minimap" class="minimap hidden" width="184" height="104" data-tip="Click or drag to move the camera · scroll to zoom"></canvas>
+    <button id="compass" class="compass" data-tip="Face north & recenter&#10;Right-drag the map to rotate the view"><span id="compassneedle">▲</span><i>N</i></button>
+    <button id="modebtn" class="modebtn" data-tip="Toggle compound / world map (M)">🗺 World map</button>
+    <button id="newgamebtn" class="newgamebtn" data-tip="Abandon this settlement and start over">⟳ New game</button>
     <button id="adminbtn" class="adminbtn" title="Temporary testing tools">⚙ Admin</button>
-    <button id="inventorybtn" class="inventorybtn">🎒 Squad</button>
-    <button id="researchbtn" class="researchbtn">Research</button>
-    <button id="toolshopbtn" class="toolshopbtn">Toolshop</button>
-    <button id="forcesbtn" class="forcesbtn">Squads</button>
+    <button id="inventorybtn" class="inventorybtn" data-tip="Squad loadout & inventory (B)">🎒 Squad <span class="key">B</span></button>
+    <button id="researchbtn" class="researchbtn" data-tip="Technology tree (R)">Research <span class="key">R</span></button>
+    <button id="toolshopbtn" class="toolshopbtn" data-tip="Craft weapons, tools & defences (T)">Toolshop <span class="key">T</span></button>
+    <button id="forcesbtn" class="forcesbtn" data-tip="Manage squads (Q)">Squads <span class="key">Q</span></button>
+    <button id="logbtn" class="logbtn" data-tip="Settlement event log (L)">📜 Log <span class="key">L</span></button>
+    <button id="objectivesbtn" class="objectivesbtn" data-tip="Settlement objectives & rewards (O)">🎯 Objectives <span class="key">O</span></button>
     <button id="tutorialbtn" class="tutorialbtn">Field manual</button>
     <div id="inventory" class="inventory"></div>
     <div id="admin" class="admin"></div>
     <div id="research" class="research"></div>
     <div id="toolshop" class="toolshop"></div>
     <div id="forces" class="forces"></div>
+    <div id="objectives" class="objectives"></div>
+    <div id="power" class="power"></div>
+    <div id="identity" class="identity"></div>
+    <div id="ally" class="ally"></div>
+    <div id="tactical" class="tactical"></div>
     <div id="tutorial" class="tutorial"></div>
     <div id="start" class="start"></div>
     <script type="module" src="/src/main.js"></script>

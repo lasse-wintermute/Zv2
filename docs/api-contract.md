@@ -206,7 +206,35 @@ POST /api/craft.php { recipe }                 → starts a timed Toolshop produ
 POST /api/facility-assignment.php { action:"assign"|"unassign", slot, survivor }
 GET  /api/research.php
 POST /api/research.php { tech }
+GET  /api/objectives.php
+POST /api/objectives.php { claim }
+GET  /api/tutorial.php
+POST /api/tutorial.php { action:"advance"|"dismiss"|"restart"|"event", event }
 ```
+Objectives are the original quest-task chains (rank, toolshop, comms, governance,
+armory, facility marks, zombie-killer) with AND-ed requirements (facility level,
+tech, kills, survivors), chain prerequisites, and item rewards claimed via POST.
+`strongholds.kills` counts infected put down in room combat; stronghold points now
+grow the original way (building completion = new level, research = tech tier,
+objective claims = 5× tier).
+
+Room combat (`/api/room-action.php` action:"fight") uses the original D20 exchange:
+damage = (ATT+d20) − (DEF+d20), per-group lead-zombie HP (`type|count|frontHp`),
+indoor melee ×3 / firearm ×⅔, stances aggressive (ATT×4/3 DEF×⅔) / guarded
+(ATT×⅔ DEF×4/3) / precise, full zombie counterattack rounds, and kill-time drop
+rolls from `zombietypes.drops`. action:"retreat" is a d20 speed contest — failure
+costs a free zombie strike. action:"claim_vehicle" { item:worldVehicleId } recovers
+an abandoned world vehicle into the player's garage once its room is clear.
+Building responses include per-room `infected[]` combat stats (`hp/attack/defense/
+frontHp`) and `vehicles[]` (unclaimed wrecks).
+Research is an 11-branch × 10-tier tree (materials, salvaging, food, medicine, electricity,
+leadership, chemistry, weapons, field, communication, defense) ported from the original
+game's costs and timings. Each `branches[*]` node carries `id, tier, name, description,
+cost` (research points), `duration` (s), `centerLevel`, `reqFacility`/`reqFacilityName`/`reqLevel`
+(the branch's gating facility and level), `prereq`, `complete`, `active`, `canResearch`, `reason`.
+A tech is researchable only when its Research center level, gating-facility level, and the
+previous tier in its branch are all satisfied. One research job runs at a time.
+
 The inventory response contains the stash, its free and squad-reserved item counts, the
 squad, Toolshop level, active production job,
 and all production plans with live material, research, and facility-level requirements.

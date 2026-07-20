@@ -13,9 +13,12 @@ export function makeDraggable(root, options = {}) {
   const target = () => targetSelector ? root.querySelector(targetSelector) : root;
   const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
   function safeViewportBottom() {
+    // Only clamp above the HUD when it actually sits in the lower half (legacy
+    // bottom-bar layout); with the SOTD top bar the full height is usable.
     const hud = document.querySelector('.hud');
     const hudRect = hud?.getBoundingClientRect();
-    return hudRect && hudRect.height > 0 ? Math.min(window.innerHeight - margin, hudRect.top - 6) : window.innerHeight - margin;
+    const hudAtBottom = hudRect && hudRect.height > 0 && hudRect.top > window.innerHeight / 2;
+    return hudAtBottom ? Math.min(window.innerHeight - margin, hudRect.top - 6) : window.innerHeight - margin;
   }
 
   function grip() { return Array.from(root.children).find((child) => child.classList?.contains('window-resizer')) || null; }

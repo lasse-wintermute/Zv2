@@ -21,4 +21,11 @@ for($f=1;$f<=18;$f++) for($lvl=1;$lvl<=10;$lvl++){
   $wood=10*$lvl*$lvl; $metal=8*$lvl*$lvl; $duration=15*$lvl;
   $db->query("INSERT INTO facility_costs(facility_id,level,wood,metal,duration) VALUES($f,$lvl,$wood,$metal,$duration)");
 }
-echo "Standalone database $safe installed with 2,500 locations.\n";
+$migrations=glob(__DIR__.'/migrations/*.sql'); sort($migrations);
+foreach($migrations as $mf){
+  $sql=file_get_contents($mf);
+  if(!$db->multi_query($sql)) die('Migration '.basename($mf)." failed: {$db->error}\n");
+  while($db->more_results()&&$db->next_result()){}
+  if($db->errno) die('Migration '.basename($mf)." failed: {$db->error}\n");
+}
+echo "Standalone database $safe installed with 2,500 locations and ".count($migrations)." migrations.\n";

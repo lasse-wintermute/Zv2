@@ -2,18 +2,42 @@
 
 // --- Isometric projection (SOTD's tile footprint) ---
 export const TW = 84, TH = 42;          // iso tile width / height
+export const WORLD_SCALE = 0.64;        // world-map tile scale (shared by view + minimap)
 export function isoXY(r, c) {            // tile (row,col) -> screen offset px
   return [(c - r) * TW / 2, (c + r) * TH / 2];
 }
 
 // --- Standalone resource ids: 0 water, 1 food, 2 wood, 3 metal, 4 petrol ---
 export const RES = [
-  { key: 'water',  name: 'Water',  de: 'Wasser',      color: '#3fa7d6' },
-  { key: 'food',   name: 'Food',   de: 'Nahrung',     color: '#8cc63f' },
-  { key: 'wood',   name: 'Wood',   de: 'Holz',        color: '#b5793a' },
-  { key: 'metal',  name: 'Metal',  de: 'Metall',      color: '#9aa7b0' },
-  { key: 'petrol', name: 'Petrol', de: 'Treibstoff',  color: '#d98a3a' },
+  { key: 'water',  name: 'Water',  de: 'Wasser',      color: '#3fa7d6', icon: '💧' },
+  { key: 'food',   name: 'Food',   de: 'Nahrung',     color: '#8cc63f', icon: '🥫' },
+  { key: 'wood',   name: 'Wood',   de: 'Holz',        color: '#b5793a', icon: '🪵' },
+  { key: 'metal',  name: 'Metal',  de: 'Metall',      color: '#9aa7b0', icon: '⚙️' },
+  { key: 'petrol', name: 'Petrol', de: 'Treibstoff',  color: '#d98a3a', icon: '⛽' },
 ];
+export const resIcon = (key) => RES.find((r) => r.key === key)?.icon || '▪';
+export const resName = (key) => RES.find((r) => r.key === key)?.name || key;
+
+// Every facility opens its own action screen from a keyboard shortcut, the way
+// each OG facility page had its own URL. Letters avoid the global M/L/O/Q/B set.
+export const FACILITY_KEYS = {
+  1: 'w',   // Life support (water)
+  2: 'y',   // Scrapyard (yard)
+  3: 'g',   // Garage
+  4: 's',   // Storage
+  8: 'f',   // Fortifications
+  9: 'p',   // Power generator → power grid screen
+  10: 'k',  // Troop quarters (barracks)
+  11: 't',  // Toolshop → production screen
+  12: 'r',  // Research center → tech tree
+  13: 'a',  // Staff area
+  15: 'j',  // Chemical laboratory
+  16: 'c',  // Hospital (clinic)
+  17: 'h',  // Headquarters
+  18: 'i',  // Radio tower (intel)
+};
+export const facKey = (slot) => FACILITY_KEYS[slot] || null;
+export const slotForKey = (key) => Number(Object.keys(FACILITY_KEYS).find((s) => FACILITY_KEYS[s] === key)) || null;
 
 // --- Facility categories -> palette (drives building colour) ---
 export const FAC_CAT = {
@@ -102,6 +126,17 @@ export function cityCat(name) {
   return 'other';
 }
 export const cityColor = (name) => CITY_CAT[cityCat(name)] || CITY_CAT.other;
+
+// Compact number: 1234 -> "1.2k", 2.4M, 1.1B. Small values stay exact.
+export function fmtNum(n) {
+  n = Math.round(Number(n) || 0);
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  if (n >= 1e9) return sign + (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (n >= 1e6) return sign + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e4) return sign + (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+  return sign + n;
+}
 
 // Compact duration: "M:SS" under an hour, else "Hh Mm".
 export function fmtDuration(sec) {
