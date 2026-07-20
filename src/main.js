@@ -515,7 +515,7 @@ function updateCanvasTip(e) {
   } else if (mode === 'world' && worldState) {
     const t = view.worldPick(x, y);
     if (t) {
-      if (t.seen) tip = `${t.home ? '★ ' : ''}${t.name || 'District'} (X:${t.x} Y:${t.y})${t.rooms ? `\n${t.rooms} rooms` : ''}${t.district ? `\n${t.district}` : ''}\n${t.home ? 'Your stronghold' : 'Click to travel / enter'}`;
+      if (t.seen) tip = `${t.home ? '★ ' : ''}${t.name || 'District'} (X:${t.x} Y:${t.y})${t.rooms ? `\n${t.rooms} rooms` : ''}${t.district ? `\n${t.district}` : ''}${t.cleared ? '\n✓ Fully cleared · +0.5% resource production' : ''}\n${t.home ? 'Your stronghold' : 'Click to travel / enter'}`;
       else if (t.scoutable) tip = `Unknown block (X:${t.x} Y:${t.y})\nClick to scout`;
       else tip = `Deep fog (X:${t.x} Y:${t.y})\nExplore outward from known ground`;
     }

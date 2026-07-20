@@ -62,7 +62,7 @@ export function createMinimap(canvas, opts = {}) {
       if (!t.seen) {
         ctx.fillStyle = t.scoutable ? '#3c3823' : (t.terrain === 'water' ? '#14262b' : '#1a221f');
       } else {
-        ctx.fillStyle = t.home ? '#ffd15a' : (TERRAIN[t.terrain] || TERRAIN.urban);
+        ctx.fillStyle = t.home ? '#ffd15a' : (t.cleared ? '#79c96b' : (TERRAIN[t.terrain] || TERRAIN.urban));
       }
       ctx.fillRect(px - dw / 2, py - dh / 2, dw, dh);
     }

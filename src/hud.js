@@ -56,7 +56,7 @@ export function createHud(el) {
         <span class="rate">${phaseClock}</span>
       </div>`;
     }
-    const starter=Number(state.gathering?.starterMultiplier||1);const boost=starter>1?`<div class="pill gathering-boost" style="--c:#d5a84d"><span class="lbl">Starter gathering</span><span class="val">×${starter}</span><span class="rate">temporary</span></div>`:'';
+    const starter=Number(state.gathering?.starterMultiplier||1);const cleared=Number(state.gathering?.clearedBuildings||0);const clearedBonus=Number(state.gathering?.clearedBonus||0);const boost=(starter>1?`<div class="pill gathering-boost" style="--c:#d5a84d"><span class="lbl">Starter gathering</span><span class="val">×${starter}</span><span class="rate">temporary</span></div>`:'')+(cleared?`<div class="pill gathering-boost" style="--c:#74b86a" data-tip="${cleared} fully cleared building${cleared===1?'':'s'}\nEach adds +0.5% to all resource production"><span class="lbl">Cleared territory</span><span class="val">+${clearedBonus}%</span><span class="rate">${cleared} building${cleared===1?'':'s'}</span></div>`:'');
 
     el.innerHTML = res + boost + power + worldPill;
   }

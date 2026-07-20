@@ -79,8 +79,8 @@ if ($r >= 25) { $x0=1; $x1=$W; $y0=1; $y1=$H; }
 else { $x0 = max(1, $px - $r); $x1 = min($W, $px + $r); $y0 = max(1, $py - $r); $y1 = min($H, $py + $r); }
 
 $q = $db->query(
-    'SELECT b.x, b.y, b.typ, b.count_rooms, b.buildingname, t.name AS typename ' .
-    'FROM buildings b LEFT JOIN buildingtypes t ON t.id = b.typ ' .
+    'SELECT b.x, b.y, b.typ, b.count_rooms, b.buildingname, t.name AS typename, COALESCE(br.cleared_at,0) AS cleared_at ' .
+    'FROM buildings b LEFT JOIN buildingtypes t ON t.id = b.typ LEFT JOIN building_runs br ON br.building_id=b.id AND br.userid=' . $uid . ' ' .
     "WHERE b.x BETWEEN $x0 AND $x1 AND b.y BETWEEN $y0 AND $y1"
 );
 
@@ -100,6 +100,7 @@ while ($q && ($row = $q->fetch_assoc())) {
         $t['type']  = (int) $row['typ'];
         $t['name']  = $bn !== '' ? $bn : (string) ($row['typename'] ?? ('Building #' . $row['typ']));
         $t['rooms'] = (int) $row['count_rooms'];
+        $t['cleared'] = (int) $row['cleared_at'] > 0;
     } else {
         // frontier rule: you may only explore next to ground you already know
         $t['scoutable'] = $seenAt($x + 1, $y) || $seenAt($x - 1, $y) || $seenAt($x, $y + 1) || $seenAt($x, $y - 1);
@@ -107,11 +108,14 @@ while ($q && ($row = $q->fetch_assoc())) {
     $tiles[] = $t;
 }
 
+$clearedBuildings=(int)$db->query("SELECT COUNT(*) n FROM building_runs WHERE userid=$uid AND cleared_at>0")->fetch_assoc()['n'];
 json_out([
     'ok'     => true,
     'world'  => ['w' => $W, 'h' => $H],
     'player' => ['x' => $px, 'y' => $py, 'name' => $p['name']],
     'squad'  => $squad,
     'squads' => $squads,
+    'clearedBuildings' => $clearedBuildings,
+    'productionBonus' => $clearedBuildings * .5,
     'tiles'  => $tiles,
 ]);

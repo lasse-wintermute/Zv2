@@ -21,7 +21,7 @@ export function fromApi(resp) {
     builds: s.builds || [],      // [ {slot,due,toLevel} ] in-progress upgrades
     world: s.world || null,
     staffing: s.staffing || null,
-    gathering: s.gathering || { starterMultiplier: 1 },
+    gathering: s.gathering || { starterMultiplier: 1, clearedBuildings: 0, clearedBonus: 0 },
     player: resp.player,
     serverTime: resp.serverTime,
     fetchedAt: Date.now() / 1000,

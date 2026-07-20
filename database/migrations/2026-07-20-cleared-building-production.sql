@@ -1,0 +1,2 @@
+ALTER TABLE building_runs
+  ADD COLUMN IF NOT EXISTS cleared_at INT NOT NULL DEFAULT 0 AFTER noise;

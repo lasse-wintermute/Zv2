@@ -94,6 +94,15 @@ export function createTactical(el, opts = {}) {
     return `<h3>${esc(r.name)} — secure</h3>${items || ''}${vehicles || ''}${!items && !vehicles ? '<p class="tac-hint">Room fully scavenged.</p>' : ''}`;
   }
 
+  function fieldAid(roomId) {
+    if (!roomId) return '';
+    const supplies = (data.cargo?.items || []).filter((item) => item.healing > 0);
+    const wounded = (data.survivors || []).filter((survivor) => survivor.hp > 0 && survivor.hp < survivor.maxHp);
+    const controls = supplies.length && wounded.length ? wounded.map((survivor) => `<div class="tac-aid-person"><span><b>${esc(survivor.name)}</b><small>${survivor.hp}/${survivor.maxHp} HP</small></span><div>${supplies.map((item) => `<button data-room-act="use_cargo" data-room="${roomId}" data-survivor="${survivor.id}" data-item="${item.id}" data-tip="Uses this squad's carried supply only">Use ${esc(item.name)} +${item.healing} (${item.amount})</button>`).join('')}</div></div>`).join('')
+      : `<p class="tac-hint">${supplies.length ? 'Every active squad member is at full health.' : 'No healing food, water, or medicine in this squad’s cargo.'}</p>`;
+    return `<section class="tac-aid"><h3>Squad field supplies</h3>${controls}</section>`;
+  }
+
   function render() {
     if (!data) return;
     const b = data.building, rooms = b.rooms || [];
@@ -116,7 +125,7 @@ export function createTactical(el, opts = {}) {
       </header>
       <div class="tactical-body">
         <div class="tac-floor" style="grid-template-columns:repeat(${cols},minmax(120px,1fr))">${cells}</div>
-        <aside class="tac-rail">${rail(sel)}</aside>
+        <aside class="tac-rail">${rail(sel)}${fieldAid(sel?.id)}</aside>
       </div>
     </div>`;
     el.classList.add('open');

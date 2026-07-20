@@ -419,6 +419,7 @@ export function createView(canvas) {
       ctx.strokeText(label, px, py + 15 * z + 6);
       ctx.fillStyle = t.home ? '#fff' : (t.landmark ? '#e8cc82' : '#e8dcc4');
       ctx.fillText(label, px, py + 15 * z + 6);
+      if (t.cleared && !t.home) { ctx.fillStyle='#79c96b';ctx.strokeStyle='rgba(4,12,6,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px+14,py-12*z,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#10200f';ctx.font='bold 10px system-ui';ctx.fillText('✓',px+14,py-9*z); }
     }
 
     for (const squad of (map.squads || (map.squad ? [map.squad] : []))) {
@@ -441,7 +442,7 @@ export function createView(canvas) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('Berlin Exclusion Zone', 17, TITLE_Y + 1);
     ctx.fillStyle = '#f4ead2'; ctx.fillText('Berlin Exclusion Zone', 16, TITLE_Y);
     ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = '#d9c9a8';
-    ctx.fillText(`${map.squad?.name||'Squad'} selected · ${seen} of ${map.tiles.length} places known nearby · click a dashed tile to explore`, 16, TITLE_Y + 18);
+    ctx.fillText(`${map.squad?.name||'Squad'} selected · ${seen} places known · ${map.clearedBuildings||0} cleared (+${map.productionBonus||0}% production)`, 16, TITLE_Y + 18);
   }
 
   // hit-test the world map: screen px -> tile (diamond test). null if none.
