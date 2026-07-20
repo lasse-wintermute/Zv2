@@ -367,10 +367,10 @@ body.playing .gameheader{display:flex}
 
 .inventorybtn { position:fixed;top:58px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(255,255,255,.12);background:rgba(18,26,22,.9);color:#d8d4bd;font-size:12px;cursor:pointer; }
 .inventorybtn:hover { background:#29342e;color:#fff; }
-.researchbtn { position:fixed;top:98px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(95,150,205,.35);background:rgba(21,31,39,.92);color:#bcdcf2;font-size:12px;cursor:pointer; }
+.researchbtn { position:fixed;top:330px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(95,150,205,.35);background:rgba(21,31,39,.92);color:#bcdcf2;font-size:12px;cursor:pointer; }
 .researchbtn:hover { background:#2d4556;color:#fff; }
-.toolshopbtn { position:fixed;top:138px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(194,139,72,.4);background:rgba(43,31,22,.93);color:#e3bd88;font-size:12px;cursor:pointer; }.toolshopbtn:hover{background:#59402b;color:#fff}
-.forcesbtn { position:fixed;top:178px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(104,159,174,.42);background:rgba(24,39,43,.94);color:#b8dde4;font-size:12px;cursor:pointer}.forcesbtn:hover{background:#31515a;color:#fff}
+.toolshopbtn { position:fixed;top:370px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(194,139,72,.4);background:rgba(43,31,22,.93);color:#e3bd88;font-size:12px;cursor:pointer; }.toolshopbtn:hover{background:#59402b;color:#fff}
+.forcesbtn { position:fixed;top:410px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(104,159,174,.42);background:rgba(24,39,43,.94);color:#b8dde4;font-size:12px;cursor:pointer}.forcesbtn:hover{background:#31515a;color:#fff}
 .logbtn{position:fixed;top:218px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(150,140,110,.4);background:rgba(30,29,23,.93);color:#d7cdb0;font-size:12px;cursor:pointer}.logbtn:hover{background:#3c392c;color:#fff}
 .objectivesbtn{position:fixed;top:258px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(178,146,92,.44);background:rgba(38,32,20,.94);color:#e0c896;font-size:12px;cursor:pointer}.objectivesbtn:hover{background:#4c4028;color:#fff}
 .tutorialbtn{position:fixed;top:298px;left:12px;z-index:5;padding:8px 14px;border-radius:3px;border:1px solid rgba(211,169,73,.46);background:rgba(49,39,21,.94);color:#ecd28d;font-size:12px;cursor:pointer}.tutorialbtn:hover{background:#604d29;color:#fff1c4}
@@ -578,6 +578,43 @@ body.playing .hud { display: flex; }
 body.playing .zoomcontrols { display:flex; }
 body.playing .hud { display: flex; }
 body.playing .status { display: block; }
+/* Keep the three high-frequency management shortcuts visible alongside the
+   OG header. Their existing buttons remain the shared action bus for clicks
+   and keyboard shortcuts, so this restores the previous side access without
+   duplicating panel-opening logic. */
+body.playing .researchbtn,
+body.playing .toolshopbtn,
+body.playing .forcesbtn { display:block; }
+
+.research-card,.toolshop-card{display:flex;flex-direction:column}
+.research-card>header,.toolshop-card>header,.research-summary,.research-job,.research-warning,.production-job,.toolshop-warning,.topic-filters{flex:none}
+.tech-tree,.production-catalog{flex:1;min-height:0;height:auto}
+.topic-filters{display:flex;gap:6px;padding:9px 14px;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.18);scrollbar-width:thin}
+.topic-filters button{flex:none;padding:5px 9px;border:1px solid rgba(255,255,255,.14);border-radius:4px;background:rgba(255,255,255,.04);color:#aab4af;font:inherit;font-size:10px;cursor:pointer;white-space:nowrap}
+.topic-filters button:hover{color:#f2eee2;background:rgba(255,255,255,.1)}
+.research-filters button.active{border-color:#66a4bc;background:#294654;color:#d9eff6}
+.toolshop-filters button.active{border-color:#a47845;background:#4d3421;color:#f1d4ab}
+
+/* Large windows may scroll their entire card. Keep the draggable title bar and
+   its close control pinned to the top of that scrolling viewport. */
+.panel>.panel-hd,
+.research-card>header,
+.toolshop-card>header,
+.forces-card>header,
+.inventory-card>header,
+.identity-card>header,
+.ally-card>header,
+.objectives-card>header,
+.power-card>header,
+.tactical-card>header,
+.admin-card>header{
+  position:sticky;
+  top:0;
+  z-index:30;
+  flex-shrink:0;
+  box-shadow:0 5px 14px rgba(0,0,0,.28);
+  backdrop-filter:blur(8px);
+}
 
 .research { position:fixed;inset:0;z-index:24;display:none;pointer-events:none; }.research.open{display:block}
 .research-card { position:fixed;left:8%;top:90px;width:min(1080px,84vw);height:min(760px,86vh);pointer-events:auto;background:linear-gradient(145deg,#1d292d,#101719);border:1px solid #486778;box-shadow:0 22px 70px rgba(0,0,0,.72);color:#e3e9e6;overflow:hidden; }

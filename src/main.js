@@ -628,7 +628,7 @@ async function openFacilityMenu(slot, cx, cy) {
     smallHtml: d.canUpgrade ? undefined : (missChips(d.nextCost) ? `<b class="cost-miss">Missing: ${missChips(d.nextCost)}</b>` : undefined),
     small: d.canUpgrade || missChips(d.nextCost) ? undefined : (d.upgradeReason || 'Unavailable'),
     disabled: !d.canUpgrade,
-    tip: d.canUpgrade ? 'Start construction now' : (missingList(d.nextCost).length ? 'Still needed: ' + missingList(d.nextCost).join(', ') : (d.upgradeReason || '')),
+    tip: [`Upgrade benefits:\n${(d.upgradeBenefits || ['Improves this facility.']).map((benefit) => `• ${benefit}`).join('\n')}`, d.canUpgrade ? 'Start construction now' : (missingList(d.nextCost).length ? 'Still needed: ' + missingList(d.nextCost).join(', ') : (d.upgradeReason || ''))].filter(Boolean).join('\n\n'),
     onClick: async () => {
       setStatus('Starting build…');
       try {
@@ -640,6 +640,7 @@ async function openFacilityMenu(slot, cx, cy) {
     },
   });
   if (d.atMax) items.push({ info: true, label: 'Fully upgraded', small: 'maximum level reached' });
+  items.push({ key: 'g', label: 'Go to facility page', small: 'open the full building screen', onClick: () => { openFacilityScreen(slot); } });
   items.push({ key: 'd', label: 'Details & staffing', small: 'full panel: workers, patients, costs', onClick: () => { panel.show(d); } });
   const fk = facKey(slot);
   context.openAt(cx, cy, d.name, items, `Level ${d.level}${d.atMax ? ' · MAX' : ''}${fk ? ` · screen (${fk.toUpperCase()})` : ''}`);

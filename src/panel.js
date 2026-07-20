@@ -75,11 +75,13 @@ export function createPanel(el, opts = {}) {
         : d.canUpgrade ? 'Upgrade to level ' + d.nextLevel
         : missing.length ? `Missing: ${missing.map((c) => `<em class="res-ic">${resIcon(c.res)}</em> ${fmtNum(c.amount - (c.owned ?? 0))}`).join('  ')}`
         : (d.upgradeReason || 'Unavailable');
+      const benefitTip = (d.upgradeBenefits || []).length ? `Upgrade benefits:\n${d.upgradeBenefits.map((benefit) => `• ${benefit}`).join('\n')}` : 'Upgrade this facility to improve its capabilities.';
+      const upgradeTip = [benefitTip, missing.length ? `Still needed: ${missing.map((c) => `${fmtNum(c.amount - (c.owned ?? 0))} ${resName(c.res)}`).join(', ')}` : d.upgradeReason].filter(Boolean).join('\n\n');
       body = `
         <div class="panel-sec">${d.atMax ? 'Fully upgraded' : 'Cost to upgrade'}</div>
         <ul class="panel-cost">${d.atMax ? '' : costRows}</ul>
         ${d.atMax ? '' : missingLine}
-        <button class="panel-upgrade" data-act="upgrade"${!d.canUpgrade ? ' disabled' : ''} data-tip="${esc(missing.length ? 'Still needed: ' + missing.map((c) => `${fmtNum(c.amount - (c.owned ?? 0))} ${resName(c.res)}`).join(', ') : (d.upgradeReason || ''))}">
+        <button class="panel-upgrade" data-act="upgrade"${!d.canUpgrade ? ' disabled' : ''} data-tip="${esc(upgradeTip)}">
           ${buttonLabel}
         </button>`;
     }
@@ -91,9 +93,13 @@ export function createPanel(el, opts = {}) {
       const full = !here && assigned >= staffing.capacity;
       const disabled = !here && (!s.available || full);
       // OG rule: say WHY someone can't be assigned, not just "unavailable".
-      const status = here ? 'assigned here'
-        : (s.unavailableReason ? s.unavailableReason
-          : (s.job ? `working: ${s.job}` : (full ? 'facility staff is full' : 'resting — ready to work')));
+      const assignment = s.job ? `facility: ${s.job}`
+        : s.squad ? `squad: ${s.squad}${s.squadAway ? ' · outside compound' : ' · at compound'}`
+        : s.treatment ? 'Hospital treatment'
+        : 'reserve';
+      const status = here ? `assigned here · ${assignment}`
+        : (s.unavailableReason ? `${assignment} · ${s.unavailableReason}`
+          : (full ? `${assignment} · facility staff is full` : `${assignment} · ready to assign`));
       const tip = `${s.name}\nHP ${s.hp}/${s.maxHp} · fatigue ${s.fatigue}%\n⚔ ${s.attack ?? '?'} · 🛡 ${s.defense ?? '?'}${s.squad ? `\nSquad: ${s.squad}${s.squadTraveling ? ' (traveling)' : ''}` : ''}\n${status}`;
       const btnTip = disabled ? (s.unavailableReason || (full ? `Staff limit ${staffing.capacity} reached — upgrade the facility` : 'Unavailable')) : (here ? 'Send back to the reserve' : 'Assign to this facility');
       return `<li data-tip="${esc(tip)}"><span><button class="staff-name" data-staff-open="${s.id}" data-tip="Open squad & survivor overview">${esc(s.name)}</button><small>${s.hp}/${s.maxHp} HP · ${s.fatigue}% fatigue · ${esc(status)}</small></span><button data-staff-act="${here ? 'unassign' : 'assign'}" data-survivor="${s.id}"${disabled ? ' disabled' : ''} data-tip="${esc(btnTip)}">${here ? 'Rest' : 'Assign'}</button></li>`;
