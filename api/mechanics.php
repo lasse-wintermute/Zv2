@@ -63,6 +63,12 @@ function zv2_staff_effects(int $uid,array $buildings=[],array $activity=[]):arra
         if(in_array($slot,[16,22,23],true))$medical++;
         if(in_array($slot,[8,10,17,24,25],true))$defense+=(int)$s['attack_stat']+(int)$s['defense_stat'];
     }
+    // Original Z economy: Storage controls the scavenger pool and scavengers
+    // drive every raw resource except the uncapped money/water analogue. Zv2
+    // scales the original population counts down to named survivors: half base
+    // output with no scavenger, normal output with one, 2x with two, etc.
+    $scavengerFactor=max(.5,(float)($workers[4]??0))*($activity[4]??1.0);
+    for($i=1;$i<=4;$i++)$rate[$i]*=$scavengerFactor;
     $tech=zv2_tech_effects($uid);$rate[0]*=1+($tech['water_rate']??0)/100;$rate[1]*=1+($tech['food_rate']??0)/100;$rate[4]*=1+($tech['petrol_rate']??0)/100;
     $started=$db->query("SELECT world_started FROM strongholds WHERE userid=$uid LIMIT 1");$age=$started&&$started->num_rows?max(0,time()-(int)$started->fetch_assoc()['world_started']):999999;$starterBoost=$age<7200?4:($age<28800?2:1);foreach($rate as$i=>$value)$rate[$i]=$value*$starterBoost;
     $power+=(int)($tech['power_bonus']??0);$defense+=(int)($tech['defense_bonus']??0);$fort=$db->query("SELECT COALESCE(SUM(GREATEST(0,v.amount-COALESCE(se.assigned,0))*i.defense_bonus),0) n FROM inventory v JOIN items i ON i.id=v.item_id LEFT JOIN (SELECT q.userid,se.item_id,SUM(se.amount) assigned FROM squad_equipment se JOIN squads q ON q.id=se.squad_id GROUP BY q.userid,se.item_id) se ON se.item_id=v.item_id AND se.userid=v.userid WHERE v.userid=$uid");if($fort)$defense+=(int)$fort->fetch_assoc()['n'];
@@ -73,7 +79,7 @@ function zv2_staff_effects(int $uid,array $buildings=[],array $activity=[]):arra
     [$drain,$output]=zv2_power_model($buildings,$activity);$output+=$power;   // engineers + tech add generation
     $powerLevel=$drain>0?min(1.0,$output/$drain):1.0;
     foreach($rate as$i=>$value)$rate[$i]=$value*$powerLevel;        // OG brownout: scales all production
-    return['workers'=>$workers,'rate'=>$rate,'starterBoost'=>$starterBoost,'power'=>$output,'drain'=>$drain,'powerLevel'=>$powerLevel,'medical'=>$medical,'craftDiscount'=>min(2,$craft),'defense'=>$defense,'tech'=>$tech];
+    return['workers'=>$workers,'rate'=>$rate,'starterBoost'=>$starterBoost,'scavengerFactor'=>$scavengerFactor,'power'=>$output,'drain'=>$drain,'powerLevel'=>$powerLevel,'medical'=>$medical,'craftDiscount'=>min(2,$craft),'defense'=>$defense,'tech'=>$tech];
 }
 
 // Zombilization storage caps: food by Life support, wood/metal by Scrapyard, petrol by

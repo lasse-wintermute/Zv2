@@ -13,7 +13,7 @@ $max=(int)$fac['maxlevel'];$atMax=$max===0||$level>=$max;$next=$level+1;$cost=[]
 if(!$atMax){$cr=$db->query("SELECT water,food,wood,metal,petrol FROM facility_costs WHERE facility_id=$slot AND level=$next LIMIT 1");if($cr&&$cr->num_rows){$c=$cr->fetch_assoc();foreach(['water','food','wood','metal','petrol']as$i=>$key)if((int)$c[$key]>0)$cost[]=['res'=>$key,'amount'=>(int)$c[$key],'owned'=>(int)floor($ownedRes[$i]??0),'enough'=>($ownedRes[$i]??0)>=(int)$c[$key]];}}
 $canAfford=!array_filter($cost,fn($c)=>!$c['enough']);$canUpgrade=!$atMax&&!$activeBuilds&&$canAfford;$upgradeReason=$atMax?'Maximum level reached.':($activeBuilds?'Another construction project is active.':(!$canAfford?'Missing resources.':''));
 // OG: job cap = level × 10 × activity (Zv2 scale: level, throttled by activity)
-$capacity=max(0,(int)floor(min(6,max(1,$level))*($activityMap[$slot]??1.0)));
+$capacity=max(0,(int)floor(max(1,$level)*($activityMap[$slot]??1.0)));
 $now=time();$staff=[];$sq=$db->query("SELECT s.id,s.name,s.hp,s.max_hp,s.fatigue,s.attack_stat,s.defense_stat,s.job_facility,f.name job_name,ht.due treatment_due,q.name squad_name,q.x squad_x,q.y squad_y,q.target_x squad_target_x,q.target_y squad_target_y,q.arrives_at squad_arrives FROM survivors s LEFT JOIN facilities f ON f.id=s.job_facility LEFT JOIN hospital_treatments ht ON ht.survivor_id=s.id LEFT JOIN squad_members sm ON sm.survivor_id=s.id LEFT JOIN squads q ON q.id=sm.squad_id WHERE s.userid=$uid ORDER BY s.id");
 while($sq&&($sv=$sq->fetch_assoc())){
  $traveling=$sv['squad_arrives']!==null&&(int)$sv['squad_arrives']>$now;
@@ -41,7 +41,8 @@ if($slot===4){   // Storage: the stash browser (OG storage.php item tabs)
     while($sr&&($it=$sr->fetch_assoc()))$stock[]=['id'=>(int)$it['item_id'],'name'=>$it['name'],'category'=>$it['category'],'amount'=>(int)$it['amount'],'durability'=>$it['durability']===null?null:(int)$it['durability'],'maxDurability'=>(int)$it['max_durability'],'attackBonus'=>(int)$it['attack_bonus'],'defenseBonus'=>(int)$it['defense_bonus'],'healing'=>(int)$it['healing'],'weight'=>zv2_item_weight((int)$it['item_id'])];
     $caps=zv2_storage_caps($levels);$resKeys=['water','food','wood','metal','petrol'];$res=[];
     foreach($resKeys as$i=>$k)$res[]=['res'=>$k,'amount'=>round($ownedRes[$i]??0,1),'cap'=>$caps[$i]>=1000000000.0?null:(int)$caps[$i]];
-    $extra['storage']=['stock'=>$stock,'resources'=>$res,'scavengerCap'=>$level*10];
+    $assignedScavengers=0;foreach($staff as$worker)if(($worker['jobFacility']??null)===4&&(int)$worker['hp']>0&&(float)$worker['fatigue']<90)$assignedScavengers++;
+    $extra['storage']=['stock'=>$stock,'resources'=>$res,'scavengerCap'=>$capacity,'scavengers'=>$assignedScavengers,'productionFactor'=>max(.5,$assignedScavengers)*($activityMap[4]??1.0)];
 }
 if($slot===8){   // Fortifications: installed defences (OG fortifications.php installdefense)
     $def=[];$dr=$db->query("SELECT v.item_id,v.amount,i.name,i.defense_bonus FROM inventory v JOIN items i ON i.id=v.item_id WHERE v.userid=$uid AND i.defense_bonus>0 AND v.amount>0 ORDER BY i.defense_bonus DESC");
@@ -49,18 +50,18 @@ if($slot===8){   // Fortifications: installed defences (OG fortifications.php in
     $eff=zv2_staff_effects($uid,$levels,$activityMap);
     $extra['defense']=['items'=>$def,'wallBonus'=>$level*4,'total'=>(int)$eff['defense'],'installCap'=>$level];
 }
-$effects=[1=>'Boosts water and food production by 25% per worker.',2=>'Boosts wood and metal production.',3=>'Boosts fuel production.',8=>'Adds survivor combat skill to raid defence.',9=>'Adds 3 power generation per worker.',10=>'Unlocks additional squads and training slots for reserve survivors.',11=>'Technicians reduce Toolshop production time by 15% each.',12=>'Scientists generate research points.',16=>'Treats critical patients; higher levels and assigned doctors reduce recovery time.',17=>'Coordinates stronghold defence.'];
+$effects=[1=>'Boosts water and food production by 25% per worker.',2=>'Boosts wood and metal production.',3=>'Boosts fuel production.',4=>'Scavengers multiply food, wood, metal and petrol production.',8=>'Adds survivor combat skill to raid defence.',9=>'Adds 3 power generation per worker.',10=>'Unlocks additional squads and training slots for reserve survivors.',11=>'Technicians reduce Toolshop production time by 15% each.',12=>'Scientists generate research points.',16=>'Treats critical patients; higher levels and assigned doctors reduce recovery time.',17=>'Coordinates stronghold defence.'];
 $upgradeBenefits=[];
 if(!$atMax){
     $activityFactor=$activityMap[$slot]??1.0;
-    $nextCapacity=max(0,(int)floor(min(6,max(1,$next))*$activityFactor));
+    $nextCapacity=max(0,(int)floor(max(1,$next)*$activityFactor));
     if($nextCapacity>$capacity)$upgradeBenefits[]='Staff capacity: '.$capacity.' → '.$nextCapacity;
     $currentDrain=zv2_facility_drain($slot,$level,$activityFactor);$nextDrain=zv2_facility_drain($slot,$next,$activityFactor);
     if($nextDrain!==$currentDrain)$upgradeBenefits[]='Power draw: '.$currentDrain.' → '.$nextDrain;
     if($slot===1)$upgradeBenefits[]='Base water & food output: +'.($level*15).'% → +'.($next*15).'%';
     if($slot===2)$upgradeBenefits[]='Base wood & metal output: +'.($level*20).'% → +'.($next*20).'%';
     if($slot===3){$upgradeBenefits[]='Base petrol output: +'.($level*20).'% → +'.($next*20).'%';$oldGarage=max(1,(int)floor($level/2));$newGarage=max(1,(int)floor($next/2));if($newGarage>$oldGarage)$upgradeBenefits[]='Vehicle capacity: '.$oldGarage.' → '.$newGarage;}
-    if($slot===4){$cap=fn(int$lvl):int=>(int)max(100,pow(max(1,$lvl),2.5)*100);$upgradeBenefits[]='Resource storage caps: '.$cap($level).' → '.$cap($next);$upgradeBenefits[]='Scavenger capacity: '.($level*10).' → '.($next*10);}
+    if($slot===4)$upgradeBenefits[]='More scavenger slots increase all raw-resource production.';
     if($slot===8)$upgradeBenefits[]='Wall defence: +'.($level*4).' → +'.($next*4);
     if($slot===9){$curve=[15,40,80,145,250,420,695,1140,1880,3065];$upgradeBenefits[]='Generator output: '.($level>0?$curve[min(9,$level-1)]:0).' → '.$curve[min(9,$next-1)];}
     if($slot===10){$oldSquads=min(5,1+$level);$newSquads=min(5,1+$next);if($newSquads>$oldSquads)$upgradeBenefits[]='Squad limit: '.$oldSquads.' → '.$newSquads;$oldTraining=$level?min(3,max(1,(int)ceil($level/2))):0;$newTraining=min(3,max(1,(int)ceil($next/2)));if($newTraining>$oldTraining)$upgradeBenefits[]='Training slots: '.$oldTraining.' → '.$newTraining;$upgradeBenefits[]='Training time: '.max(15,45-$level*5).'s → '.max(15,45-$next*5).'s';}

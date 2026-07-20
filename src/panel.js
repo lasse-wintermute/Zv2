@@ -135,7 +135,7 @@ export function createPanel(el, opts = {}) {
           ${list.map((it) => `<li data-tip="${esc(itemTip(it.id) || it.name)}"><span>${esc(it.name)}${it.durability !== null && it.maxDurability ? `<small>${it.durability}/${it.maxDurability} condition</small>` : ''}</span><b>${fmtNum(it.amount)}×</b></li>`).join('')}`).join('')
         : '<li class="muted">The stash is empty — bring loot home and deposit it.</li>';
       special = `<div class="panel-sec">Resource stores</div><ul class="panel-cost store-res">${resRows}</ul>
-        <p class="staff-effect">Storage level ${d.level} supports ${s.scavengerCap} scavengers and raises every resource cap.</p>
+        <p class="staff-effect">Storage level ${d.level} supports ${s.scavengerCap} scavenger${s.scavengerCap === 1 ? '' : 's'} · ${s.scavengers} assigned · ${s.productionFactor}× raw-resource output. Resource caps come from Life Support, Scrapyard and Garage.</p>
         <div class="panel-sec">Stash · ${s.stock.length} item type${s.stock.length === 1 ? '' : 's'}</div>
         <ul class="stock-list">${stockRows}</ul>`;
     }
