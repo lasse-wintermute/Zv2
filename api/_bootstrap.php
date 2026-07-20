@@ -25,6 +25,7 @@ $db = @new mysqli($dbHost, $dbUser, $dbPass, $dbName, $dbPort);
 if ($db->connect_errno) json_err('database_offline', "Zv2 database unavailable. Run database/install.php.", 503);
 $db->set_charset('utf8mb4');
 
+require_once __DIR__ . '/npc_names.php';
 require_once __DIR__ . '/mechanics.php';
 
 function api_user_id(): int { return (int) ($_SESSION['userid'] ?? 0); }

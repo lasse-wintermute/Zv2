@@ -28,4 +28,7 @@ foreach($migrations as $mf){
   while($db->more_results()&&$db->next_result()){}
   if($db->errno) die('Migration '.basename($mf)." failed: {$db->error}\n");
 }
+// Keep fresh installations aligned with the rerunnable content migrations used
+// for existing saves. These preserve stable technology and recipe IDs.
+require __DIR__.'/migrate_npc_names.php';
 echo "Standalone database $safe installed with 2,500 locations and ".count($migrations)." migrations.\n";

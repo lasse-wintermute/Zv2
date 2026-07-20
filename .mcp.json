@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "wirespeak": {
+      "command": "wirespeak",
+      "args": [
+        "mcp"
+      ],
+      "env": {
+        "WIRESPEAK_PROJECT_SLUG": "zv2"
+      }
+    }
+  }
+}

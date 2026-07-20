@@ -22,5 +22,29 @@
       "mcp__Claude_Browser__tabs_select",
       "mcp__Claude_Browser__tabs_create"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "wirespeak hook session-start",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "wirespeak hook user-prompt-submit",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

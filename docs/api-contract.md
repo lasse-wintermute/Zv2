@@ -236,8 +236,8 @@ A tech is researchable only when its Research center level, gating-facility leve
 previous tier in its branch are all satisfied. One research job runs at a time.
 
 The inventory response contains the stash, its free and squad-reserved item counts, the
-squad, Toolshop level, active production job,
-and all production plans with live material, research, and facility-level requirements.
+squad, Toolshop level, rested technician count, active production job, and all production
+plans with live material, research, technician, and Toolshop-level requirements.
 Health, equipment, ammunition, and weapon condition are persistent. Healing and repair
 items are consumed server-side. Production atomically deducts ingredients, runs on a
 server-owned timer, and transfers the finished item to the stash.
@@ -247,7 +247,8 @@ accelerated 10-minute day / 10-minute night clock and one zombie raid at each ni
 
 ## Planned (later phases — listed so the contract can grow coherently)
 - `GET  /api/facility/{slot}`               → detail (outputs, reqs, queue)
-- Research responses include points, hourly gain, center requirements, prerequisites,
-  completed nodes, and the current timed job. Recovered technologies affect production,
+- Research responses include points, hourly gain, Research Center and thematic branch-
+  facility requirements, prerequisites, completed nodes, and the current timed job.
+  Recovered technologies affect production,
   travel, combat, healing, defense, power, construction, salvage, and crafting.
 - realtime channel (WS/SSE) for live combat & unit movement (MMO phase)
