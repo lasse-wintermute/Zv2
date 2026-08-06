@@ -5,6 +5,8 @@
 // facilityModel() until an image has actually decoded, so a slow or missing
 // sprite degrades to the old look instead of a hole in the compound.
 
+import manifest from './assets/facilities/manifest.json';
+
 const urls = import.meta.glob('./assets/facilities/*.webp', {
   eager: true, query: '?url', import: 'default',
 });
@@ -38,6 +40,14 @@ export function getSprite(key) {
   const img = images[key];
   return img && img.complete && img.naturalWidth ? img : null;
 }
+
+/**
+ * Height fraction at which a sprite meets the ground, so the renderer can sit the
+ * building on its tile rather than on its bounding box. 1 for most; lower where the
+ * artwork parks a detached prop underneath (sandbags below the barracks), which
+ * would otherwise push the building itself up into the air.
+ */
+export const getAnchor = (key) => manifest[key]?.anchor ?? 1;
 
 /** Re-render hook: fires as each sprite decodes and when the toggle flips. */
 export function onSpritesChanged(cb) {

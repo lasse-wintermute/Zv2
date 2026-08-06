@@ -484,6 +484,10 @@ modeBtn.addEventListener('click', () => setMode(mode === 'compound' ? 'world' : 
 async function setMode(m) {
   mode = m;
   view.cam.x = 0; view.cam.y = 0;
+  // cam.rot is shared by both maps: square the compound up again on the way back
+  // from a rotated world map, and hide the compass where rotation is disabled.
+  if (m !== 'world') { view.setRotation(0); updateCompass(); }
+  document.body.classList.toggle('worldmode', m === 'world');
   panel.hide(); view.setSelected(null); view.setSelectedCell(null);
   activePlace = null;
   zoomControls.classList.remove('hidden');
@@ -504,7 +508,11 @@ let drag = null, moved = false, rightDrag = null;
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('pointerdown', (e) => {
   if (!playing) return;
-  if (e.button === 2) {                          // SOTD: right-drag rotates the view
+  // SOTD right-drag rotate, world map only. The compound is built from fixed
+  // 2:1 isometric sprites drawn from one camera angle, so rotating it tilts the
+  // buildings instead of orbiting them.
+  if (e.button === 2) {
+    if (mode !== 'world') return;
     rightDrag = { x: e.clientX, rot0: view.cam.rot, moved: false };
     try { canvas.setPointerCapture(e.pointerId); } catch { /* synthetic events */ }
     return;

@@ -3,7 +3,7 @@
 // coloured by category, dark when unpowered.
 import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
 import { t } from './i18n.js';
-import { getSprite, onSpritesChanged } from './sprites.js';
+import { getSprite, getAnchor, onSpritesChanged } from './sprites.js';
 
 // Generated sprites are drawn a little wider than one tile so a compound reads
 // as buildings crowding their plot rather than models parked on coasters.
@@ -251,14 +251,16 @@ export function createView(canvas) {
   // base resting on the tile's bottom vertex. False when no sprite has decoded,
   // which is the caller's cue to fall back to the procedural model.
   function facilitySprite(sx, sy, f) {
-    const img = getSprite(facInfo(f.type).key);
+    const key = facInfo(f.type).key, img = getSprite(key);
     if (!img) return false;
     const dw = SPRITE_W, dh = dw * img.naturalHeight / img.naturalWidth;
     ctx.beginPath();ctx.ellipse(sx,sy+10,35,12,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.28)';ctx.fill();
     // Sprites are lit for the powered state, so an unpowered building is drained
     // here the same way facilityModel() swaps to its grey palette.
     if (!f.powered) ctx.filter = 'grayscale(.85) brightness(.55)';
-    ctx.drawImage(img, sx - dw / 2, sy + TH / 2 - dh + 2, dw, dh);
+    // Land the building's footprint on the tile, not the bounding box bottom:
+    // artwork with a detached prop below it would otherwise hang in the air.
+    ctx.drawImage(img, sx - dw / 2, sy + TH / 2 - dh * getAnchor(key) + 2, dw, dh);
     ctx.filter = 'none';
     return true;
   }
@@ -266,7 +268,9 @@ export function createView(canvas) {
   function building(sx, sy, f, labels) {
     const info=facInfo(f.type),base=f.powered?facColor(f.type):GREY,hw=(TW/2)*INSET,hh=(TH/2)*INSET;
     if (!facilitySprite(sx, sy, f)) facilityModel(sx,sy,f,base);
-    if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh-5);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
+    // Symmetric diamond: the top vertex used to carry an extra -5, which skewed
+    // the selection ring into a lopsided quadrilateral instead of a tile outline.
+    if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
     // labels stay upright regardless of view rotation — drawn in a screen-space pass
     // Sit the label on the building's own footprint rather than below the tile,
     // where it used to land on top of whatever stands in the row in front.
@@ -525,7 +529,7 @@ export function createView(canvas) {
   function setSelected(slot) { selected = slot; if (slot != null) selectedCell = null; }
   function setSelectedCell(gx, gy) { selectedCell = (gx == null ? null : { gx, gy }); if (selectedCell) selected = null; }
 
-  function setZoom(value){cam.zoom=Math.max(.55,Math.min(1.7,value));}
+  function setZoom(value){cam.zoom=Math.max(.55,Math.min(2,value));}
   function setWorldZoom(value){cam.worldZoom=Math.max(.42,Math.min(2.2,value));}
   function setRotation(rad){cam.rot=rad%(Math.PI*2);}
   // center the compound camera on a grid cell (facility-list jump)

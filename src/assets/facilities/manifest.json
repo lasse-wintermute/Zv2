@@ -1,0 +1,44 @@
+{
+  "chem_lab": {
+    "anchor": 1.0
+  },
+  "fortifications": {
+    "anchor": 1.0
+  },
+  "garage": {
+    "anchor": 1.0
+  },
+  "headquarters": {
+    "anchor": 1.0
+  },
+  "life_support": {
+    "anchor": 1.0
+  },
+  "medical_center": {
+    "anchor": 0.9959
+  },
+  "power_generator": {
+    "anchor": 0.9974
+  },
+  "radio_tower": {
+    "anchor": 0.9661
+  },
+  "research_center": {
+    "anchor": 0.9948
+  },
+  "scrapyard": {
+    "anchor": 0.9941
+  },
+  "staff_area": {
+    "anchor": 0.9965
+  },
+  "storage": {
+    "anchor": 0.9961
+  },
+  "toolshop": {
+    "anchor": 1.0
+  },
+  "troop_quarters": {
+    "anchor": 0.9008
+  }
+}

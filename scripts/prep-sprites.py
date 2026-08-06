@@ -11,6 +11,7 @@ table below maps them onto facility keys from src/config.js.
 """
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -179,6 +180,33 @@ def neutralise(img, alpha, hue_tol, sat_floor, trigger, darken):
     return Image.fromarray(arr.astype(np.uint8), "RGB"), share
 
 
+def footprint_anchor(alpha, min_share):
+    """Height fraction where the building's mass actually meets the ground.
+
+    Some generations park a detached prop below the building -- a free-standing
+    row of sandbags under the barracks, an awning and furniture below the staff
+    house. Anchoring on the bounding box bottom then lifts the building itself
+    off its tile and it reads as floating.
+
+    The distinction is that those props are *detached*, so anchor on the bottom
+    of the largest connected component. A width threshold cannot do this job: an
+    isometric base pad tapers to a point, so the genuine bottom of a normal
+    sprite is a single pixel wide and would be discarded.
+    """
+    mask = np.asarray(alpha, dtype=np.int16) > 128
+    if not mask.any():
+        return 1.0
+    labels, count = ndimage.label(mask)
+    if count <= 1:
+        return 1.0
+    sizes = ndimage.sum(mask, labels, range(1, count + 1))
+    main = int(np.argmax(sizes)) + 1
+    if sizes[main - 1] < mask.sum() * min_share:
+        return 1.0                      # no dominant mass; trust the bounding box
+    rows = np.flatnonzero((labels == main).any(axis=1))
+    return float((rows.max() + 1) / mask.shape[0])
+
+
 def process(path, out_dir, key, size, opts, dry_run):
     img = Image.open(path).convert("RGB")
     alpha = cut_background(img, opts.thresh, opts.key_thresh, opts.min_area, opts.erode,
@@ -208,10 +236,12 @@ def process(path, out_dir, key, size, opts, dry_run):
             out.save(dest, "WEBP", quality=opts.quality, method=6, exact=False)
         else:
             out.save(dest, "PNG", optimize=True)
+    anchor = footprint_anchor(out.getchannel("A"), opts.footprint)
     size_kb = os.path.getsize(dest) / 1024 if os.path.exists(dest) else 0
     note = f", {tainted*100:.1f}% recoloured to steel" if tainted >= opts.neutralise_above else ""
-    return (f"  {os.path.basename(path)} -> {key}.{opts.format}  "
-            f"{out.size[0]}x{out.size[1]}px, {covered:.0f}% opaque, {size_kb:.0f} KB{note}")
+    lifted = f", anchor {anchor:.2f}" if anchor < 0.97 else ""
+    return anchor, (f"  {os.path.basename(path)} -> {key}.{opts.format}  "
+                    f"{out.size[0]}x{out.size[1]}px, {covered:.0f}% opaque, {size_kb:.0f} KB{note}{lifted}")
 
 
 def main():
@@ -238,6 +268,9 @@ def main():
                     help="recolour backdrop-hued artwork to steel once it exceeds this share "
                          "of the sprite; below it, pink detail is assumed intentional")
     ap.add_argument("--darken", type=float, default=0.72, help="brightness of the recoloured steel")
+    ap.add_argument("--footprint", type=float, default=0.5,
+                    help="share of a sprite the largest connected component must hold before "
+                         "its base is trusted as the building's footprint")
     ap.add_argument("--dry-run", action="store_true", help="report what would happen, write nothing")
     args = ap.parse_args()
 
@@ -264,8 +297,17 @@ def main():
         else:
             superseded.append(os.path.basename(path))
 
+    anchors = {}
     for key in sorted(chosen):
-        print(process(chosen[key][1], args.out, key, args.size, args, args.dry_run))
+        anchors[key], line = process(chosen[key][1], args.out, key, args.size, args, args.dry_run)
+        print(line)
+
+    # The renderer needs the anchors, and computing them in the browser would mean
+    # decoding every sprite to a scratch canvas on load. Ship them alongside instead.
+    if not args.dry_run and anchors:
+        with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as fh:
+            json.dump({k: {"anchor": round(v, 4)} for k, v in sorted(anchors.items())}, fh, indent=2)
+        print(f"\nwrote manifest.json ({len(anchors)} sprites)")
 
     if superseded:
         print("\nsuperseded by a newer variant, skipped: " + ", ".join(sorted(superseded)))

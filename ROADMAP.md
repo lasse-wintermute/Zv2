@@ -49,10 +49,18 @@
 
 ## Next
 
-1. Add survivor experience, traits, relationships and permanent injuries.
-2. Add raid preparation choices, traps, and an interactive defence phase.
-3. Add factions, reputation and consequential city events.
-4. Replace development resume-by-ID with real authentication.
+1. Rewrite the Field Manual in the original's voice. The current ten steps are
+   correct but flat; the original Zombilization sergeant dialogue was far funnier
+   and gave the onboarding a character. Source the tone from the sergeant boxes
+   noted in `docs/og-zombilization-reference.md` (lines 221, 246) and carry it
+   through `api/tutorial.php`, keeping the German strings in `src/translations.js`
+   in step.
+2. Add survivor experience, traits, relationships and permanent injuries.
+3. Add raid preparation choices, traps, and an interactive defence phase.
+4. Add factions, reputation and consequential city events.
+5. Replace development resume-by-ID with real authentication. Blocks any public
+   deployment, together with the reflect-any-origin CORS in `api/_bootstrap.php`
+   and the ungated cheat endpoints in `api/admin.php`.
 
 ## Standalone migration
 
