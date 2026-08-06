@@ -3,6 +3,11 @@
 // coloured by category, dark when unpowered.
 import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
 import { t } from './i18n.js';
+import { getSprite, onSpritesChanged } from './sprites.js';
+
+// Generated sprites are drawn a little wider than one tile so a compound reads
+// as buildings crowding their plot rather than models parked on coasters.
+const SPRITE_W = TW * 1.32;
 
 const INSET = 0.82;                 // building footprint vs tile
 const hOf = (level) => 16 + level * 9;
@@ -242,9 +247,25 @@ export function createView(canvas) {
     }
   }
 
+  // Generated sprite for a facility, anchored on its tile: centred horizontally,
+  // base resting on the tile's bottom vertex. False when no sprite has decoded,
+  // which is the caller's cue to fall back to the procedural model.
+  function facilitySprite(sx, sy, f) {
+    const img = getSprite(facInfo(f.type).key);
+    if (!img) return false;
+    const dw = SPRITE_W, dh = dw * img.naturalHeight / img.naturalWidth;
+    ctx.beginPath();ctx.ellipse(sx,sy+10,35,12,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.28)';ctx.fill();
+    // Sprites are lit for the powered state, so an unpowered building is drained
+    // here the same way facilityModel() swaps to its grey palette.
+    if (!f.powered) ctx.filter = 'grayscale(.85) brightness(.55)';
+    ctx.drawImage(img, sx - dw / 2, sy + TH / 2 - dh + 2, dw, dh);
+    ctx.filter = 'none';
+    return true;
+  }
+
   function building(sx, sy, f, labels) {
     const info=facInfo(f.type),base=f.powered?facColor(f.type):GREY,hw=(TW/2)*INSET,hh=(TH/2)*INSET;
-    facilityModel(sx,sy,f,base);
+    if (!facilitySprite(sx, sy, f)) facilityModel(sx,sy,f,base);
     if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh-5);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
     // labels stay upright regardless of view rotation — drawn in a screen-space pass
     labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy + hh + 4, powered: f.powered });
@@ -513,5 +534,8 @@ export function createView(canvas) {
     cam.x=(minX+maxX)/2-ox;
     cam.y=(minY+maxY)/2-oy+30;
   }
+  // Sprites decode after the first paint, so redraw the compound as they arrive.
+  onSpritesChanged(() => { if (lastCompoundState) render(lastCompoundState); });
+
   return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn, startRaidAnimation };
 }
