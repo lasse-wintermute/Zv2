@@ -59,6 +59,11 @@ SENTINELS = [(255, 0, 255), (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0)
 # over the tile in front, which is what a porch should do anyway.
 ANCHOR_OVERRIDES = {"staff_area": 0.82}
 
+# Draw scale relative to one tile. The headquarters is the seat of the compound and
+# reads as just another shed at parity, so it is given room to tower over its
+# neighbours. This is presentation only -- it still occupies a single grid cell.
+SCALE_OVERRIDES = {"headquarters": 1.7}
+
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
 TYPE_KEYS = {
@@ -317,7 +322,8 @@ def main():
     # decoding every sprite to a scratch canvas on load. Ship them alongside instead.
     if not args.dry_run and anchors:
         with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as fh:
-            json.dump({k: {"anchor": round(v, 4)} for k, v in sorted(anchors.items())}, fh, indent=2)
+            json.dump({k: {"anchor": round(v, 4), "scale": SCALE_OVERRIDES.get(k, 1)}
+                       for k, v in sorted(anchors.items())}, fh, indent=2)
         print(f"\nwrote manifest.json ({len(anchors)} sprites)")
 
     if superseded:

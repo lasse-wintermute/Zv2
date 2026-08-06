@@ -103,9 +103,21 @@ const _FAC = [
 export const FAC = {};
 for (const [type, key, cat, name, de] of _FAC) FAC[type] = { type, key, cat, name, de };
 
+// Map labels only. Anything past ~16 characters gets ellipsised on the compound,
+// which turned these into "Chemical labora…" and "Communication c…". The full
+// names stay in menus, panels and tooltips where there is room for them.
+const FAC_LABEL = {
+  comm_center:     ['Comm center', 'Kommzentrum'],
+  chem_lab:        ['Chemical lab', 'Chemielabor'],
+  fortifications:  ['Fortifications', 'Verteidigung'],
+  research_center: ['Research center', 'Forschung'],
+};
+
 export function facInfo(type) {
   const info = FAC[type] || { type, key: 'facility' + type, cat: 'special', name: 'Facility ' + type, de: 'Anlage ' + type };
-  return getLanguage() === 'de' ? { ...info, name: info.de } : info;
+  const de = getLanguage() === 'de';
+  const short = FAC_LABEL[info.key];
+  return { ...info, name: de ? info.de : info.name, label: short ? (de ? short[1] : short[0]) : (de ? info.de : info.name) };
 }
 export function facColor(type) { return FAC_CAT[facInfo(type).cat] || FAC_CAT.special; }
 

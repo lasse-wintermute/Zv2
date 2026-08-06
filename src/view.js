@@ -3,7 +3,7 @@
 // coloured by category, dark when unpowered.
 import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
 import { t } from './i18n.js';
-import { getSprite, getAnchor, onSpritesChanged } from './sprites.js';
+import { getSprite, getAnchor, getScale, onSpritesChanged } from './sprites.js';
 
 // Generated sprites are drawn a little wider than one tile so a compound reads
 // as buildings crowding their plot rather than models parked on coasters.
@@ -253,7 +253,7 @@ export function createView(canvas) {
   function facilitySprite(sx, sy, f) {
     const key = facInfo(f.type).key, img = getSprite(key);
     if (!img) return false;
-    const dw = SPRITE_W, dh = dw * img.naturalHeight / img.naturalWidth;
+    const dw = SPRITE_W * getScale(key), dh = dw * img.naturalHeight / img.naturalWidth;
     ctx.beginPath();ctx.ellipse(sx,sy+10,35,12,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.28)';ctx.fill();
     // Sprites are lit for the powered state, so an unpowered building is drained
     // here the same way facilityModel() swaps to its grey palette.
@@ -275,7 +275,7 @@ export function createView(canvas) {
     // The screen-space pass draws the whole block BELOW this anchor -- name at
     // +11, level chip down to +26 -- so anchoring at the tile's bottom vertex hung
     // it into the row in front. Sit it above centre so the block lands on the tile.
-    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy - 6, powered: f.powered });
+    labels.push({ text: shortName(info.label || info.name), lv: f.level, sx, sy: sy - 6, powered: f.powered });
   }
 
   // upright construction countdown badge (screen space, constant size)

@@ -88,7 +88,23 @@ Level is shown by the existing label badge. **14 images, not 28.**
 
 ## The prompts
 
-### 17 — Headquarters (generate this one first)
+### 17 — Headquarters (REGENERATE — the seat of the compound, must dominate)
+
+The first attempt reads as another farmyard shed and gets lost among its neighbours.
+This one is drawn at 1.7× tile scale in the renderer, so it needs the mass to earn
+that room: a heavy institutional block, not a house. Keep the two-storey neighbours
+in mind — this should look like the building they were all built around.
+
+Generate with Reference images EMPTY, so it doesn't inherit the cottage roofline
+that the rest of the set shares.
+
+```
+2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor architecture: stained bone-khaki concrete, corrugated metal, scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
+
+SUBJECT: an imposing five-storey institutional command block, heavy and monolithic like a converted prison or civic administration building, dominating everything around it. Long regular grids of small barred windows run across every floor, most dark and a few lit amber. A flat roof carries an aerial mast, satellite dishes, water tanks, air handling units and a sandbagged rooftop guard post behind a parapet. The ground floor is fortified: a reinforced double door behind a concrete blast wall, steel shutters, and sandbag emplacements at the corners. Squat projecting wings step down at either side to a lower entrance hall, and the whole structure sits on a raised concrete plinth. Brutalist, weather-stained, institutional — not a house, no pitched roof, no cottage.
+```
+
+### 17 — Headquarters (original prompt, superseded)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
@@ -96,12 +112,13 @@ Level is shown by the existing label badge. **14 images, not 28.**
 SUBJECT: a fortified headquarters campus — a tall central administration house with a hipped rust-red roof and three rows of small lit windows, flanked by two lower service buildings and a gatehouse arranged around an open courtyard, a garage wing with a roller shutter door, two small water tanks, brick chimneys, and a thin radio aerial rising from the central roof.
 ```
 
-### 1 — Life support (REGENERATE — generate with Reference images EMPTY)
+### 1 — Life support (KEEP AS IS — no regeneration)
 
-The first attempt was made straight after `headquarters` with the HQ image still
-attached as a reference, and inherited its whole composition: same three-storey block,
-same lit windows, same fenced yard. Clear the reference panel for this one. The prompt
-below leans hard on "industrial plant, no multi-storey house" to push it further away.
+It originally read too close to `headquarters`, having been generated straight after
+it with the HQ image still attached as a reference. Resolved from the other end
+instead: the headquarters becomes an institutional block, so the two no longer
+collide. The current life support sprite stays. The prompt below is kept only in case
+it is ever rebuilt.
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.

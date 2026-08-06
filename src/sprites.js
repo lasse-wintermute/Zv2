@@ -49,6 +49,9 @@ export function getSprite(key) {
  */
 export const getAnchor = (key) => manifest[key]?.anchor ?? 1;
 
+/** Draw size relative to one tile. >1 for buildings meant to dominate the compound. */
+export const getScale = (key) => manifest[key]?.scale ?? 1;
+
 /** Re-render hook: fires as each sprite decodes and when the toggle flips. */
 export function onSpritesChanged(cb) {
   readyCallbacks.add(cb);
