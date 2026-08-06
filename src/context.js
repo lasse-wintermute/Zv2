@@ -12,9 +12,11 @@ export function createContext() {
   el.style.display = 'none';
   document.body.appendChild(el);
   let items = [];
+  let tag = null;              // which menu is showing, so callers can refresh only their own
 
-  function close() { el.style.display = 'none'; el.innerHTML = ''; items = []; }
+  function close() { el.style.display = 'none'; el.innerHTML = ''; items = []; tag = null; }
   function isOpen() { return el.style.display !== 'none'; }
+  function openTag() { return isOpen() ? tag : null; }
 
   el.addEventListener('pointerdown', (e) => e.stopPropagation());
   el.addEventListener('click', (e) => {
@@ -35,9 +37,10 @@ export function createContext() {
     if (item) { e.preventDefault(); e.stopPropagation(); close(); item.onClick?.(); }
   }, true);
 
-  function openAt(x, y, title, list, subtitle = '') {
+  function openAt(x, y, title, list, subtitle = '', menuTag = null) {
     items = (list || []).filter(Boolean);
     if (!items.length) { close(); return; }
+    tag = menuTag;
     el.innerHTML = `<header><b>${esc(title)}</b>${subtitle ? `<small>${esc(subtitle)}</small>` : ''}</header>
       ${items.map((it, i) => it.info
         ? `<div class="ctx-info"${it.tip ? ` data-tip="${esc(it.tip)}"` : ''}>${it.html || `<span>${esc(it.label)}</span>${it.small ? `<small>${esc(it.small)}</small>` : ''}`}</div>`
@@ -49,5 +52,5 @@ export function createContext() {
     el.style.top = Math.max(m, Math.min(window.innerHeight - h - m, y + 4)) + 'px';
   }
 
-  return { openAt, close, isOpen };
+  return { openAt, close, isOpen, openTag };
 }

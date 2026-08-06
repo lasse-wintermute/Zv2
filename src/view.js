@@ -7,7 +7,7 @@ import { getSprite, onSpritesChanged } from './sprites.js';
 
 // Generated sprites are drawn a little wider than one tile so a compound reads
 // as buildings crowding their plot rather than models parked on coasters.
-const SPRITE_W = TW * 1.32;
+const SPRITE_W = TW * 1.0;
 
 const INSET = 0.82;                 // building footprint vs tile
 const hOf = (level) => 16 + level * 9;
@@ -268,7 +268,9 @@ export function createView(canvas) {
     if (!facilitySprite(sx, sy, f)) facilityModel(sx,sy,f,base);
     if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh-5);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
     // labels stay upright regardless of view rotation — drawn in a screen-space pass
-    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy + hh + 4, powered: f.powered });
+    // Sit the label on the building's own footprint rather than below the tile,
+    // where it used to land on top of whatever stands in the row in front.
+    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy + hh - 10, powered: f.powered });
   }
 
   // upright construction countdown badge (screen space, constant size)

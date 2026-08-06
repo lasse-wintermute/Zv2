@@ -31,6 +31,7 @@ ALIASES = {
     "scrapyard":       ["scrapyard", "scrap"],
     "garage":          ["garage"],
     "storage":         ["storage"],
+    "comm_center":     ["commcenter", "communication", "comms", "comm"],
     "fortifications":  ["fortifications", "fortification", "fort"],
     "power_generator": ["powergenerator", "generator", "power"],
     "troop_quarters":  ["troopquarters", "troop", "barracks"],
@@ -49,10 +50,10 @@ SENTINELS = [(255, 0, 255), (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0)
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
 TYPE_KEYS = {
-    1: "life_support", 2: "scrapyard", 3: "garage", 4: "storage", 8: "fortifications",
-    9: "power_generator", 10: "troop_quarters", 11: "toolshop", 12: "research_center",
-    13: "staff_area", 15: "chem_lab", 16: "medical_center", 17: "headquarters",
-    18: "radio_tower",
+    1: "life_support", 2: "scrapyard", 3: "garage", 4: "storage", 6: "comm_center",
+    8: "fortifications", 9: "power_generator", 10: "troop_quarters", 11: "toolshop",
+    12: "research_center", 13: "staff_area", 15: "chem_lab", 16: "medical_center",
+    17: "headquarters", 18: "radio_tower",
 }
 
 

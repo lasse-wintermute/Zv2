@@ -276,7 +276,9 @@ let seenRaidTime = 0;
 // Transient one-liners stay on the status line; anything meaningful is also
 // pushed to the event log, and errors/notable events pop a toast. `tone` can be
 // forced ('good'|'warn'|'bad'), else it's inferred from isError.
-const AMBIENT = /^(live|mock|.*zoom \d|.*drag to pan|.* selected| *)$/i;   // don't log idle chatter
+// Don't log idle chatter. Anchored, so every branch has to match the WHOLE line:
+// "zoom \d" alone never did, because "Compound zoom 115%" carries a trailing "15%".
+const AMBIENT = /^(live|mock|.*zoom \d.*|.*drag to pan.*|.* selected| *)$/i;
 function setStatus(msg, isError, tone) {
   statusEl.textContent = t(msg || '');
   statusEl.classList.toggle('error', !!isError);
@@ -441,6 +443,7 @@ async function load() {
 
 // live tick: HUD interpolation, plus build-countdown re-render + finalize on completion
 const finalizeTriggered = new Set();
+let buildMenuAt = null;       // plot the build menu is showing, so it can be rebuilt in place
 let phaseRefreshAt = 0;
 setInterval(() => {
   if (!playing || !state) return;
@@ -452,7 +455,10 @@ setInterval(() => {
     if (b.due * 1000 <= Date.now() && !finalizeTriggered.has(b.slot)) {
       finalizeTriggered.add(b.slot);
       const done = b;
-      load().then(() => setStatus(`Construction complete · level ${done.toLevel}`, false, 'good'));   // server finalizes completed Zv2 construction
+      load().then(() => {
+        setStatus(`Construction complete · level ${done.toLevel}`, false, 'good');
+        refreshBuildMenu();   // an open menu was showing everything on hold; unlock it
+      });   // server finalizes completed Zv2 construction
     }
   }
   for (const slot of finalizeTriggered) if (!builds.some((b) => b.slot === slot)) finalizeTriggered.delete(slot);
@@ -587,7 +593,25 @@ async function openBuildMenu(hit, cx, cy) {
   requestRender();
   let catalog;
   try { catalog = await getFacilityCatalog(); } catch (err) { setStatus('Build catalog failed: ' + err.message, true); return; }
-  const items = assignMenuKeys((catalog.facilities || []).map((f) => ({
+  buildMenuAt = { hit, cx, cy };
+
+  // A facility under construction is still level 0, so the catalogue keeps
+  // offering it. Drop it from the list and say what the site is busy with
+  // instead, rather than showing a row that can only ever be refused.
+  const active = (state?.builds || []).map((b) => ({
+    b, fac: (state?.facilities || []).find((f) => f.slot === b.slot),
+  }));
+  const busyTypes = new Set(active.map((a) => a.fac?.type).filter((t) => t != null));
+  // No countdown here on purpose: the menu is only rebuilt when the build
+  // finishes, so a timer printed now would sit frozen on screen.
+  const header = active.map(({ fac }) => ({
+    info: true,
+    label: `🏗 Building ${facInfo(fac?.type).name}`,
+    small: 'in progress',
+    tip: 'Only one construction project runs at a time. The rest unlock when this finishes.',
+  }));
+
+  const items = assignMenuKeys((catalog.facilities || []).filter((f) => !busyTypes.has(f.type)).map((f) => ({
     label: f.name,
     tip: (f.description || '') + (missingList(f.cost).length ? `\nMissing: ${missingList(f.cost).join(', ')}` : ''),
     smallHtml: (f.cost || []).length
@@ -608,7 +632,18 @@ async function openBuildMenu(hit, cx, cy) {
     },
   })));
   if (!items.length) items.push({ label: 'All facility types placed', disabled: true });
-  context.openAt(cx, cy, 'Construct facility', items, `plot ${hit.gridX + 1}|${hit.gridY + 1}`);
+  const subtitle = header.length ? 'construction in progress' : `plot ${hit.gridX + 1}|${hit.gridY + 1}`;
+  context.openAt(cx, cy, 'Construct facility', [...header, ...items], subtitle, 'build');
+}
+
+// Reopen the build menu in place so it picks up the new state. Guarded by the
+// menu tag: a facility popup opened over the same plot must not be replaced.
+function refreshBuildMenu() {
+  if (context.openTag() !== 'build' || !buildMenuAt) return;
+  const { hit, cx, cy } = buildMenuAt;
+  const taken = (state?.facilities || []).some((f) => f.gridX === hit.gridX && f.gridY === hit.gridY);
+  if (taken) { context.close(); buildMenuAt = null; return; }
+  openBuildMenu(hit, cx, cy);
 }
 
 // Facility popup, context-menu style (same pattern as the build menu):

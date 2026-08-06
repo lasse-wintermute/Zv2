@@ -60,6 +60,7 @@ without a reference image — the reference is an accelerator, not a dependency.
 | 2 | Scrapyard | `scrapyard` |
 | 3 | Garage | `garage` |
 | 4 | Storage | `storage` |
+| 6 | Communication center | `comm_center` |
 | 8 | Fortifications | `fortifications` |
 | 9 | Power generator | `power_generator` |
 | 10 | Troop quarters | `troop_quarters` |
@@ -72,6 +73,10 @@ without a reference image — the reference is an accelerator, not a dependency.
 
 Keys match the `key` field in [`src/config.js`](../src/config.js). The German language
 toggle rewrites facility *names* but never keys, so sprite lookup is unaffected by it.
+
+This list is the `facilities` table, which is what drives the build menu — **not**
+`FACILITY_KEYS` in config.js, which only covers facilities with a keyboard shortcut and
+silently omits the communication center.
 
 ## Two states, one generation
 
@@ -91,12 +96,17 @@ Level is shown by the existing label badge. **14 images, not 28.**
 SUBJECT: a fortified headquarters campus — a tall central administration house with a hipped rust-red roof and three rows of small lit windows, flanked by two lower service buildings and a gatehouse arranged around an open courtyard, a garage wing with a roller shutter door, two small water tanks, brick chimneys, and a thin radio aerial rising from the central roof.
 ```
 
-### 1 — Life support
+### 1 — Life support (REGENERATE — generate with Reference images EMPTY)
+
+The first attempt was made straight after `headquarters` with the HQ image still
+attached as a reference, and inherited its whole composition: same three-storey block,
+same lit windows, same fenced yard. Clear the reference panel for this one. The prompt
+below leans hard on "industrial plant, no multi-storey house" to push it further away.
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a low water treatment bunker with a hipped roof and a single row of small windows, flanked by two tall cylindrical teal-grey water tanks on either side, connected by a thick horizontal pipe run crossing the front of the building, with valve wheels and pressure gauges on the pipework.
+SUBJECT: a squat industrial water treatment plant, entirely functional with no living quarters — three enormous riveted teal-grey cylindrical tanks of differing heights dominate the composition and are the tallest thing present, standing on short steel legs above a low flat-roofed concrete pump house barely half their height. A tangle of thick pipes, valve wheels, pressure gauges and a settling basin wraps around the base. Strictly single storey, flat roof, no pitched or hipped roof, no upper floors, no rows of lit windows, no house, no fence, no yard.
 ```
 
 ### 2 — Scrapyard
@@ -121,6 +131,22 @@ SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbe
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
 SUBJECT: a hardened central storage hall with a reinforced double door and two rows of small barred windows, flanked on both sides by weathered shipping containers stacked two high, with wooden crates and supply pallets under a canvas tarp against the front wall.
+```
+
+### 6 — Communication center (NEW — was missed in wave 1)
+
+Wave 1 was scoped off `FACILITY_KEYS` in config.js, which lists only facilities with a
+keyboard shortcut. The build menu is driven by the `facilities` table instead, and the
+communication center is in the database but has no shortcut, so it fell through the gap
+and still renders as the old procedural silhouette.
+
+Keep it clearly distinct from the radio tower: this is a manned signals room with dish
+antennas, not a tall mast.
+
+```
+2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
+
+SUBJECT: a single-storey signals and communication hut with a flat roof, a wide window of glowing green monitor screens along the front wall and a heavy cable trunk running into the side. Three squat dish antennas of different sizes are bolted directly to the roof at different angles, alongside a bank of grey equipment cabinets and a small whip aerial. Low and wide, no tall mast, no lattice tower — the dishes sit low on the roof. The dish frames and cabinets are dark rusted steel and grey enamel, never pink or magenta.
 ```
 
 ### 8 — Fortifications
