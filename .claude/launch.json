@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5273
+    },
+    {
+      "name": "zv2-api",
+      "runtimeExecutable": "C:\\xampp\\php\\php.exe",
+      "runtimeArgs": ["-d", "display_errors=0", "-S", "127.0.0.1:8124", "-t", "."],
+      "port": 8124
     }
   ]
 }
