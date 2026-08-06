@@ -272,9 +272,10 @@ export function createView(canvas) {
     // the selection ring into a lopsided quadrilateral instead of a tile outline.
     if(f.slot===selected){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx,sy-hh);ctx.lineTo(sx+hw,sy);ctx.lineTo(sx,sy+hh);ctx.lineTo(sx-hw,sy);ctx.closePath();ctx.stroke();}
     // labels stay upright regardless of view rotation — drawn in a screen-space pass
-    // Sit the label on the building's own footprint rather than below the tile,
-    // where it used to land on top of whatever stands in the row in front.
-    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy + hh - 10, powered: f.powered });
+    // The screen-space pass draws the whole block BELOW this anchor -- name at
+    // +11, level chip down to +26 -- so anchoring at the tile's bottom vertex hung
+    // it into the row in front. Sit it above centre so the block lands on the tile.
+    labels.push({ text: shortName(info.name), lv: f.level, sx, sy: sy - 6, powered: f.powered });
   }
 
   // upright construction countdown badge (screen space, constant size)

@@ -20,9 +20,13 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 
-DEFAULT_INBOX = os.path.join(os.path.expanduser("~"), "Desktop", "Zv2 sprites")
-DEFAULT_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                           "src", "assets", "facilities")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DESKTOP_INBOX = os.path.join(os.path.expanduser("~"), "Desktop", "Zv2 sprites")
+# Every raw generation is archived in the repo, so the sprites can always be rebuilt
+# even if the Desktop drop folder is cleared out.
+ARCHIVE = os.path.join(ROOT, "art", "facilities-source")
+DEFAULT_INBOX = DESKTOP_INBOX if os.path.isdir(DESKTOP_INBOX) else ARCHIVE
+DEFAULT_OUT = os.path.join(ROOT, "src", "assets", "facilities")
 
 # facility key -> substrings that may appear in a downloaded filename.
 # Longest alias wins, so "power" cannot steal a file meant for "power_generator".
@@ -47,6 +51,13 @@ ALIASES = {
 # Sentinel colours tried in order; the first one absent from the image is used to
 # paint the flood-filled background, so the mask can never eat real pixels.
 SENTINELS = [(255, 0, 255), (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0)]
+
+# Hand-set ground anchors for artwork the automatic measure cannot read. The staff
+# area's patio and awning are *attached* to the house, so they are one component and
+# the measure correctly returns 1.0 -- but the patio then takes the ground contact
+# and the house hangs above the tile. Seating the house lets the patio spill forward
+# over the tile in front, which is what a porch should do anyway.
+ANCHOR_OVERRIDES = {"staff_area": 0.82}
 
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
@@ -236,7 +247,7 @@ def process(path, out_dir, key, size, opts, dry_run):
             out.save(dest, "WEBP", quality=opts.quality, method=6, exact=False)
         else:
             out.save(dest, "PNG", optimize=True)
-    anchor = footprint_anchor(out.getchannel("A"), opts.footprint)
+    anchor = ANCHOR_OVERRIDES.get(key, footprint_anchor(out.getchannel("A"), opts.footprint))
     size_kb = os.path.getsize(dest) / 1024 if os.path.exists(dest) else 0
     note = f", {tainted*100:.1f}% recoloured to steel" if tainted >= opts.neutralise_above else ""
     lifted = f", anchor {anchor:.2f}" if anchor < 0.97 else ""
