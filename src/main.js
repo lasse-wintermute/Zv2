@@ -3,6 +3,7 @@
 // On-demand rendering (not a perpetual rAF loop): rAF is paused when the page isn't
 // visible — e.g. headless/preview panes — which would leave the canvas blank.
 import './style.css';
+import { initI18n, t } from './i18n.js';
 import {
   getStronghold, getSource, getFacility, getFacilityCatalog, getMap, getBuilding, getInventory, getResearch, getForces, postForces, postResearch, postInventoryAction, postFacilityAssignment, postCraft, postAdmin, postBuild, postScout, postRoomAction,
   getSession, postNewGame, postResume, getTutorial, postTutorial, getObjectives, postObjectiveClaim, postRecruit,
@@ -56,6 +57,8 @@ const toolshopBtn = document.getElementById('toolshopbtn');
 const forcesBtn = document.getElementById('forcesbtn');
 const tutorialBtn = document.getElementById('tutorialbtn');
 const logBtn = document.getElementById('logbtn');
+
+initI18n();
 
 const notify = createNotify();
 const recruitEncounter = createRecruitEncounter({
@@ -275,11 +278,11 @@ let seenRaidTime = 0;
 // forced ('good'|'warn'|'bad'), else it's inferred from isError.
 const AMBIENT = /^(live|mock|.*zoom \d|.*drag to pan|.* selected| *)$/i;   // don't log idle chatter
 function setStatus(msg, isError, tone) {
-  statusEl.textContent = msg || '';
+  statusEl.textContent = t(msg || '');
   statusEl.classList.toggle('error', !!isError);
   if (!msg || AMBIENT.test(msg)) return;
-  const t = tone || (isError ? 'bad' : 'info');
-  notify.notify(msg, { tone: t, silent: t === 'info' });   // info: log only; good/warn/bad also toast
+  const statusTone = tone || (isError ? 'bad' : 'info');
+  notify.notify(msg, { tone: statusTone, silent: statusTone === 'info' });   // info: log only; good/warn/bad also toast
 }
 
 function requestRender() {
@@ -293,6 +296,8 @@ function requestRender() {
     if (state) view.render(state);
   }
 }
+
+document.addEventListener('zv2:languagechange', requestRender);
 
 async function refreshAlly(){
   try {

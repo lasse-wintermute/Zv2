@@ -1,4 +1,5 @@
 // Static data + pure helpers (no game state). Ported/adapted from SOTD.
+import { getLanguage } from './i18n.js';
 
 // --- Isometric projection (SOTD's tile footprint) ---
 export const TW = 84, TH = 42;          // iso tile width / height
@@ -16,7 +17,10 @@ export const RES = [
   { key: 'petrol', name: 'Petrol', de: 'Treibstoff',  color: '#d98a3a', icon: '⛽' },
 ];
 export const resIcon = (key) => RES.find((r) => r.key === key)?.icon || '▪';
-export const resName = (key) => RES.find((r) => r.key === key)?.name || key;
+export const resName = (key) => {
+  const resource = RES.find((r) => r.key === key);
+  return (getLanguage() === 'de' ? resource?.de : resource?.name) || key;
+};
 
 // Every facility opens its own action screen from a keyboard shortcut, the way
 // each OG facility page had its own URL. Letters avoid the global M/L/O/Q/B set.
@@ -100,7 +104,8 @@ export const FAC = {};
 for (const [type, key, cat, name, de] of _FAC) FAC[type] = { type, key, cat, name, de };
 
 export function facInfo(type) {
-  return FAC[type] || { type, key: 'facility' + type, cat: 'special', name: 'Facility ' + type, de: 'Anlage ' + type };
+  const info = FAC[type] || { type, key: 'facility' + type, cat: 'special', name: 'Facility ' + type, de: 'Anlage ' + type };
+  return getLanguage() === 'de' ? { ...info, name: info.de } : info;
 }
 export function facColor(type) { return FAC_CAT[facInfo(type).cat] || FAC_CAT.special; }
 
