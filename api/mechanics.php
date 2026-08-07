@@ -235,9 +235,32 @@ function zv2_emplacements(int $uid): array {
     return $out;
 }
 
+/**
+ * Raise the perimeter wall, skipping the gateways.
+ *
+ * Kept separate from the first-run layout so compounds built before the wall
+ * existed get one without being reset. A wall is a structure like any other,
+ * which is what lets the lane search treat it as solid and forces every walker
+ * through a gate.
+ */
+function zv2_ensure_wall(int $uid): void {
+    global $db;
+    $r = $db->query("SELECT COUNT(*) c FROM compound_structures WHERE userid=$uid AND kind='wall'");
+    if ($r && (int)($r->fetch_assoc()['c'] ?? 0) > 0) return;
+
+    $w = ZV2_GRID_W; $h = ZV2_GRID_H;
+    $ring = [];
+    for ($x = 0; $x < $w; $x++) { $ring[] = [$x, 0]; $ring[] = [$x, $h - 1]; }
+    for ($y = 1; $y < $h - 1; $y++) { $ring[] = [0, $y]; $ring[] = [$w - 1, $y]; }
+    foreach ($ring as [$x, $y]) {
+        $db->query("INSERT IGNORE INTO compound_structures(userid,kind,grid_x,grid_y,facing,hp,max_hp,variant)
+                    VALUES($uid,'wall',$x,$y,'',260,260,0)");
+    }
+}
+
 /** Every structure in the compound, as the client and the wave sim both need it. */
 function zv2_structures(int $uid): array {
-    global $db; zv2_ensure_compound($uid);
+    global $db; zv2_ensure_compound($uid); zv2_ensure_wall($uid);
     $out = [];
     $r = $db->query("SELECT kind,grid_x,grid_y,facing,hp,max_hp,variant FROM compound_structures WHERE userid=$uid");
     while ($r && ($s = $r->fetch_assoc())) $out[] = [
@@ -257,7 +280,10 @@ function zv2_structures(int $uid): array {
 function zv2_wave_lanes(int $uid, array $structures, array $facilities): array {
     $w = ZV2_GRID_W; $h = ZV2_GRID_H;
     $blocked = [];
-    foreach ($structures as $s) if ($s['kind'] === 'house') $blocked["{$s['gridX']}|{$s['gridY']}"] = true;
+    // Walls are solid, houses are solid, and so is anything the player has built.
+    // That leaves the gateways as the only way in, which is the whole point of a
+    // perimeter -- without it walkers would stroll over the wall line.
+    foreach ($structures as $s) if ($s['kind'] === 'house' || $s['kind'] === 'wall') $blocked["{$s['gridX']}|{$s['gridY']}"] = true;
     foreach ($facilities as $f) $blocked["{$f['gridX']}|{$f['gridY']}"] = true;
 
     // Head for the headquarters when it is placed, otherwise the middle of the map.

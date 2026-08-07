@@ -75,8 +75,10 @@ SCALE_OVERRIDES = {
     "headquarters":    1.45,   # five storeys; still towers, now at honest window scale
     "storage":         1.15,   # judged -- warehouse, few windows to measure
     "medical_center":  1.15,
-    "power_generator": 0.88,   # judged -- measure caught rust and the chimney band,
-                               # not glass; its louvre and pipework read far too large
+    "power_generator": 0.80,   # judged -- measure caught rust and the chimney band, not
+                               # glass. Interim only: its louvre and pipework are oversized
+                               # against its OWN walls, which no scale value can correct.
+                               # It is first on the rebuild list for that reason.
     "staff_area":      1.07,
     "troop_quarters":  1.05,   # judged -- long barracks, no lit glass detected
     "garage":          1.03,

@@ -49,6 +49,7 @@ export function createView(canvas) {
   let placements = [];        // [{slot,type,sx,sy,level}] captured each render, for hit-testing
   let emptyPlacements = [];
   let selected = null;        // selected facility slot (highlighted)
+  let selectedEmplacement = null;   // selected gun, by instance id -- several share a slot
   let selectedCell = null;    // selected empty compound plot {gx,gy} (highlighted)
   let raidAnimation = null;
   let raidFrame = 0;
@@ -315,6 +316,38 @@ export function createView(canvas) {
     }
   }
 
+  // Town wall. Borrowed from SOTD's approach: a wall is an ordinary tile, and the
+  // sprite joins itself to whichever neighbours are also wall, so a ring of cells
+  // reads as one continuous rampart with a catwalk rather than a row of posts.
+  function wall(sx, sy, s, wallAt) {
+    const H = 26;
+    const n = wallAt(s.c, s.r - 1), e = wallAt(s.c + 1, s.r), sN = wallAt(s.c, s.r + 1), w = wallAt(s.c - 1, s.r);
+    ctx.beginPath(); ctx.ellipse(sx, sy + 6, 26, 9, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.fill();
+
+    // Each face runs toward the neighbouring wall cell, so corners close up.
+    const faces = [[e, TW / 2, TH / 2], [sN, -TW / 2, TH / 2], [n, TW / 2, -TH / 2], [w, -TW / 2, -TH / 2]];
+    for (const [joined, dx, dy] of faces) {
+      if (!joined) continue;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy); ctx.lineTo(sx + dx, sy + dy);
+      ctx.lineTo(sx + dx, sy + dy - H); ctx.lineTo(sx, sy - H); ctx.closePath();
+      ctx.fillStyle = dx > 0 ? '#6f6a58' : '#5a564a';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(18,20,16,.5)'; ctx.lineWidth = 1; ctx.stroke();
+      // Catwalk rail along the top of each run.
+      ctx.strokeStyle = 'rgba(150,138,104,.75)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(sx, sy - H - 3); ctx.lineTo(sx + dx, sy + dy - H - 3); ctx.stroke();
+    }
+    // Post at the cell centre ties the runs together and gives corners a bollard.
+    ctx.fillStyle = '#4b4739'; ctx.fillRect(sx - 3, sy - H - 5, 6, H + 5);
+    ctx.fillStyle = '#7d7663'; ctx.fillRect(sx - 3, sy - H - 5, 6, 3);
+    if ((s.gridX + s.gridY) % 5 === 0) {                 // watch position every few cells
+      ctx.fillStyle = '#565244'; ctx.fillRect(sx - 6, sy - H - 12, 12, 8);
+      ctx.strokeStyle = '#2c2a22'; ctx.lineWidth = 1; ctx.strokeRect(sx - 6, sy - H - 12, 12, 8);
+    }
+  }
+
   // A gateway is a gap in the wall with a post either side. The main gate is
   // wider and braced -- it is where the bulk of a wave comes through.
   function gate(sx, sy, s) {
@@ -436,6 +469,11 @@ export function createView(canvas) {
     // occupied for the empty-plot pass just as facilities do.
     const structures = (state.structures || []).map((s) => ({ ...s, r: s.gridY, c: s.gridX }));
     const guns = (state.emplacements || []).map((e) => ({ ...e, r: e.gridY, c: e.gridX }));
+    // Wall cells join to their neighbours, and a gateway counts as joined so the
+    // rampart runs into the gate posts instead of stopping a cell short of them.
+    const solid = new Set(structures.filter((s) => s.kind === 'wall' || s.kind.startsWith('gate'))
+                                    .map((s) => `${s.c}|${s.r}`));
+    const wallAt = (c, r) => solid.has(`${c}|${r}`);
     const compoundPoints=[];emptyPlacements=[];
     const occupied=new Set([...placed.map(f=>`${f.c}|${f.r}`), ...structures.map(s=>`${s.c}|${s.r}`),
                             ...guns.map(g=>`${g.c}|${g.r}`)]);
@@ -468,6 +506,15 @@ export function createView(canvas) {
       const [ox, oy] = isoXY(f.r, f.c);
       rangeRing(originX + ox, originY + oy, reach);
     }
+    // Emplacements are not facilities, so they need their own pass -- matched on
+    // the instance id, since several guns of one type share a slot number.
+    for (const g of guns) {
+      if (g.id !== selectedEmplacement) continue;
+      const reach = facRange(g.type, g.level);
+      if (!reach) continue;
+      const [ox, oy] = isoXY(g.r, g.c);
+      rangeRing(originX + ox, originY + oy, reach);
+    }
 
     for (const item of drawList) {
       const [ox, oy] = isoXY(item.r, item.c);
@@ -483,6 +530,8 @@ export function createView(canvas) {
       } else if (item.kind === 'gun') {
         emplacement(sx, sy, item.g);
         placements.push({ slot: item.g.type, type: item.g.type, emplacementId: item.g.id, sx, sy, level: item.g.level });
+      } else if (item.kind === 'wall') {
+        wall(sx, sy, item.s, wallAt);
       } else {
         gate(sx, sy, item.s);
       }
@@ -664,7 +713,8 @@ export function createView(canvas) {
     return null;
   }
   // Facility and empty-plot selection are mutually exclusive.
-  function setSelected(slot) { selected = slot; if (slot != null) selectedCell = null; }
+  function setSelected(slot) { selected = slot; selectedEmplacement = null; if (slot != null) selectedCell = null; }
+  function setSelectedEmplacement(id) { selectedEmplacement = id; if (id != null) { selected = null; selectedCell = null; } }
   function setSelectedCell(gx, gy) { selectedCell = (gx == null ? null : { gx, gy }); if (selectedCell) selected = null; }
 
   function setZoom(value){cam.zoom=Math.max(.55,Math.min(4,value));}
@@ -681,5 +731,5 @@ export function createView(canvas) {
   // Sprites decode after the first paint, so redraw the compound as they arrive.
   onSpritesChanged(() => { if (lastCompoundState) render(lastCompoundState); });
 
-  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn, startRaidAnimation };
+  return { render, renderWorld, resize, cam, pick, worldPick, setSelected, setSelectedEmplacement, setSelectedCell, setZoom, setWorldZoom, setRotation, centerCompoundOn, startRaidAnimation };
 }

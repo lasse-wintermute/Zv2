@@ -665,7 +665,7 @@ function refreshBuildMenu() {
 // production and no upgrade path, and the reach is the only number that decides
 // whether it was worth placing -- so that goes first.
 function openEmplacementMenu(hit, cx, cy) {
-  view.setSelected(hit.slot);
+  view.setSelectedEmplacement(hit.emplacementId);
   requestRender();
   const info = facInfo(hit.type);
   const reach = facRange(hit.type, hit.level);
@@ -685,7 +685,7 @@ function openEmplacementMenu(hit, cx, cy) {
       try {
         const r = await postBuild(hit.type, undefined, undefined, { demolish: hit.emplacementId });
         if (!r.ok) throw new Error(r.message || 'Could not demolish.');
-        view.setSelected(null);
+        view.setSelectedEmplacement(null);
         await load();
         setStatus(r.message || 'Emplacement cleared.', false, 'good');
       } catch (err) { setStatus(err.message, true); }
