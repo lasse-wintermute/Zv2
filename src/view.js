@@ -276,6 +276,18 @@ export function createView(canvas) {
   // windows. The point of the reference is that it looks like somewhere people
   // lived, which is what makes the wall around it read as grim rather than makeshift.
   function house(sx, sy, s) {
+    // One generated house serves the whole town. Terraces are meant to repeat, so
+    // identical homes read as a housing row rather than as a missing variant.
+    const img = getSprite('settler_house');
+    if (img) {
+      ctx.beginPath(); ctx.ellipse(sx, sy + 9, 30, 10, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fill();
+      const dw = SPRITE_W * getScale('settler_house'), dh = dw * img.naturalHeight / img.naturalWidth;
+      if (s.hp < s.maxHp * 0.6) ctx.filter = 'grayscale(.5) brightness(.72)';
+      ctx.drawImage(img, sx - dw / 2, sy + TH / 2 - dh * getAnchor('settler_house') + 2, dw, dh);
+      ctx.filter = 'none';
+      return;
+    }
     const wall = ['#b9b096', '#a7a794', '#c0b49a', '#9fa791'][s.variant % 4];
     const roof = ['#6d4136', '#584a3d', '#7a4a3a', '#4f4438'][s.variant % 4];
     const hw = (TW / 2) * 0.86, hh = (TH / 2) * 0.86;
@@ -389,6 +401,14 @@ export function createView(canvas) {
   function emplacement(sx, sy, g) {
     ctx.beginPath(); ctx.ellipse(sx, sy + 7, 20, 7, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fill();
+    // Generated art where it exists; the procedural silhouette is the fallback,
+    // exactly as for facilities.
+    const key = facInfo(g.type).key, img = getSprite(key);
+    if (img) {
+      const dw = SPRITE_W * getScale(key), dh = dw * img.naturalHeight / img.naturalWidth;
+      ctx.drawImage(img, sx - dw / 2, sy + TH / 2 - dh * getAnchor(key) + 2, dw, dh);
+      return;
+    }
     if (g.type === 43) {                                   // barricade: no tower, just a wall of scrap
       ctx.fillStyle = '#6b6252';
       for (let i = -2; i <= 2; i++) { const w = 7 - Math.abs(i); ctx.fillRect(sx + i * 8 - w / 2, sy - 8 - Math.abs(i), w, 11); }

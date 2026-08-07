@@ -80,6 +80,13 @@ ANCHOR_OVERRIDES = {"staff_area": 0.82}
 SCALE_OVERRIDES = {
     "headquarters":   1.45,   # five storeys; predates the anchor but reads well
     "troop_quarters": 1.05,   # judged -- last one still on the old generation
+    # Emplacements are small objects, not buildings: a 4 m gun position drawn the
+    # width of an 18 m warehouse would read as architecture. Held well under a tile
+    # so a firing line looks like equipment placed among the buildings, but not so
+    # small that it stops being a comfortable click target.
+    "sniper_nest":    0.62,
+    "mg_tower":       0.55,
+    "settler_house":  0.80,   # a house, so smaller than a facility hall
 }
 
 # --- The drum as a ruler -------------------------------------------------------
@@ -138,6 +145,8 @@ TYPE_KEYS = {
     8: "fortifications", 9: "power_generator", 10: "troop_quarters", 11: "toolshop",
     12: "research_center", 13: "staff_area", 15: "chem_lab", 16: "medical_center",
     17: "headquarters", 18: "radio_tower",
+    # Tower-defence pieces and player-laid terrain.
+    41: "sniper_nest", 42: "mg_tower", 43: "barricade", 45: "settler_house",
 }
 
 

@@ -27,6 +27,10 @@
     "anchor": 0.997,
     "scale": 1
   },
+  "mg_tower": {
+    "anchor": 0.9963,
+    "scale": 0.55
+  },
   "power_generator": {
     "anchor": 0.9964,
     "scale": 1
@@ -42,6 +46,14 @@
   "scrapyard": {
     "anchor": 0.9963,
     "scale": 1
+  },
+  "settler_house": {
+    "anchor": 0.9971,
+    "scale": 0.8
+  },
+  "sniper_nest": {
+    "anchor": 0.9974,
+    "scale": 0.62
   },
   "staff_area": {
     "anchor": 0.82,
