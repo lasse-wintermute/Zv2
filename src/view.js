@@ -270,19 +270,49 @@ export function createView(canvas) {
   // Pre-built settlement housing: drawn procedurally rather than from sprites so
   // ten of them cost nothing to load, and kept visually quieter than the
   // facilities so the buildings a player actually owns still read first.
+  // Woodbury: a normal small town sealed behind a wall, not a shanty. Two storeys,
+  // clapboard siding, a pitched roof and a porch, with lamps still burning in some
+  // windows. The point of the reference is that it looks like somewhere people
+  // lived, which is what makes the wall around it read as grim rather than makeshift.
   function house(sx, sy, s) {
-    const wall = ['#8d8672', '#7f7b69', '#948a71', '#837f6d'][s.variant % 4];
-    const roof = ['#6d4136', '#5f4a3a', '#77473a', '#5a4033'][s.variant % 4];
-    const hw = (TW / 2) * 0.74, hh = (TH / 2) * 0.74, h = 15 + (s.variant % 3) * 4;
-    ctx.beginPath(); ctx.ellipse(sx, sy + 8, 26, 9, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,.26)'; ctx.fill();
+    const wall = ['#b9b096', '#a7a794', '#c0b49a', '#9fa791'][s.variant % 4];
+    const roof = ['#6d4136', '#584a3d', '#7a4a3a', '#4f4438'][s.variant % 4];
+    const hw = (TW / 2) * 0.86, hh = (TH / 2) * 0.86;
+    const storeys = 2, floor = 13, h = floor * storeys;
+    ctx.beginPath(); ctx.ellipse(sx, sy + 9, 30, 10, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fill();
+
     prism(sx, sy, hw, hh, h, wall);
+    // Clapboard: horizontal courses catch the light down both visible faces.
+    ctx.strokeStyle = 'rgba(60,54,44,.22)'; ctx.lineWidth = 1;
+    for (let i = 1; i < storeys * 4; i++) {
+      const yy = sy - (h * i) / (storeys * 4);
+      ctx.beginPath(); ctx.moveTo(sx - hw, yy - hh * .0); ctx.lineTo(sx, yy + hh); ctx.lineTo(sx + hw, yy); ctx.stroke();
+    }
     hipRoof(sx, sy, hw, hh, h, roof);
-    ctx.fillStyle = 'rgba(28,32,28,.85)';
-    ctx.fillRect(sx - 4, sy - h + 4, 4, 5); ctx.fillRect(sx + 2, sy - h + 4, 4, 5);
-    const ruined = s.hp < s.maxHp * 0.6;
-    if (ruined) { ctx.strokeStyle = 'rgba(30,22,18,.75)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(sx - hw * .5, sy - h); ctx.lineTo(sx, sy - h + 7); ctx.stroke(); }
+
+    // Two rows of sash windows, a few still lit.
+    for (let row = 0; row < storeys; row++) {
+      const yy = sy - h + 5 + row * floor;
+      for (let i = -1; i <= 1; i++) {
+        const lit = ((s.variant + row * 3 + i + 4) % 5) === 0;
+        ctx.fillStyle = lit ? 'rgba(240,206,126,.92)' : 'rgba(38,42,40,.85)';
+        ctx.fillRect(sx - hw + 7 + (i + 1) * 9, yy, 5, 7);
+        ctx.fillRect(sx + 3 + (i + 1) * 8, yy + 3, 5, 7);
+      }
+    }
+    // Porch: posts and a shallow roof across the front face.
+    ctx.strokeStyle = 'rgba(70,60,48,.9)'; ctx.lineWidth = 2;
+    for (const dx of [-11, 6]) { ctx.beginPath(); ctx.moveTo(sx + dx, sy + hh - 2); ctx.lineTo(sx + dx, sy + hh - 11); ctx.stroke(); }
+    ctx.fillStyle = shade(roof, .8);
+    ctx.beginPath(); ctx.moveTo(sx - 14, sy + hh - 11); ctx.lineTo(sx + 9, sy + hh - 15);
+    ctx.lineTo(sx + 9, sy + hh - 11); ctx.lineTo(sx - 14, sy + hh - 7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(30,26,22,.9)'; ctx.fillRect(sx - 4, sy + hh - 12, 5, 9);   // front door
+
+    if (s.hp < s.maxHp * 0.6) {                       // boarded up after a breach
+      ctx.strokeStyle = 'rgba(74,58,40,.85)'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(sx - hw * .6, sy - h + 12); ctx.lineTo(sx + 2, sy - h + 20); ctx.stroke();
+    }
   }
 
   // A gateway is a gap in the wall with a post either side. The main gate is

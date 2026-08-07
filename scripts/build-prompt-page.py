@@ -20,8 +20,25 @@ SECTION = re.compile(r"^### (.+?)$", re.M)
 FENCE = re.compile(r"```\n(.*?)```", re.S)
 
 
+# Urgency, read off the heading. Anything still to generate sorts above the set
+# that is already in the game, so the page opens on the work rather than on an
+# archive of prompts that have already been used.
+URGENCY = [
+    (re.compile(r"\bREBUILD\b|\bREGENERATE\b", re.I), 0, "To do"),
+    (re.compile(r"\bNEW\b", re.I), 1, "To do"),
+    (re.compile(r"\bSUPERSEDED\b|\bKEEP AS IS\b|\bdone\b", re.I), 3, "Superseded"),
+]
+
+
+def rank(title):
+    for pattern, order, band in URGENCY:
+        if pattern.search(title):
+            return order, band
+    return 2, "Already generated"
+
+
 def parse(md):
-    """Yield (heading, note, prompt) for every section carrying a fenced prompt."""
+    """Yield (rank, band, heading, note, prompt) for every section with a prompt."""
     marks = list(SECTION.finditer(md))
     for i, m in enumerate(marks):
         body = md[m.end():marks[i + 1].start() if i + 1 < len(marks) else len(md)]
@@ -30,7 +47,9 @@ def parse(md):
             continue
         note = body[:fence.start()].strip()
         note = re.sub(r"\s+", " ", re.sub(r"[`*]", "", note))
-        yield m.group(1).strip(), note, fence.group(1).strip()
+        title = m.group(1).strip()
+        order, band = rank(title)
+        yield order, band, title, note, fence.group(1).strip()
 
 
 PAGE = """<!doctype html>
@@ -46,6 +65,9 @@ PAGE = """<!doctype html>
   .settings {{ border:1px solid #3d4a3f; background:#1b221d; padding:12px 15px; margin-bottom:26px;
                font-size:13px; color:#bcc7bb; }}
   .settings b {{ color:#e2d9b8; }}
+  .band {{ margin:26px 0 10px; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+           color:#c2a049; border-bottom:1px solid #4a4431; padding-bottom:5px; }}
+  .band:first-of-type {{ margin-top:4px; }}
   .card {{ border:1px solid #39423a; background:#191f1b; margin-bottom:14px; }}
   .card > header {{ display:flex; gap:12px; align-items:baseline; justify-content:space-between;
                     padding:11px 14px; border-bottom:1px solid #2c332d; }}
@@ -115,8 +137,12 @@ def main():
     with open(args.src, encoding="utf-8") as fh:
         md = fh.read()
 
-    cards, count = [], 0
-    for i, (title, note, prompt) in enumerate(parse(md)):
+    sections = sorted(parse(md), key=lambda s: s[0])
+    cards, count, band = [], 0, None
+    for i, (order, this_band, title, note, prompt) in enumerate(sections):
+        if this_band != band:
+            band = this_band
+            cards.append(f'<h2 class="band">{html.escape(band)}</h2>')
         note_html = f'<div class="note">{html.escape(note)}</div>' if note else ""
         cards.append(CARD.format(i=i, title=html.escape(title), note=note_html,
                                  prompt=html.escape(prompt)))

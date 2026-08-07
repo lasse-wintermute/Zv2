@@ -47,6 +47,10 @@ $positions=[];$pq=$db->query("SELECT slot,grid_x,grid_y FROM facility_positions 
 $buildRows=zv2_active_builds($uid);$buildSlots=[];foreach($buildRows as$b)$buildSlots[$b['slot']]=$b;
 $facilities = [];
 for($slot=1;$slot<count($buildings);$slot++) {
+    // Emplacements live in their own table and are never facilities, however they
+    // were placed: a stale level here would render one at the grid default with no
+    // position of its own.
+    if(in_array($slot,ZV2_EMPLACEMENT_TYPES,true))continue;
     $lvl=(int)($buildings[$slot]??0);if($lvl<=0&&!isset($buildSlots[$slot]))continue;
     $a = $active[$slot] ?? 1;
     $facilities[] = [

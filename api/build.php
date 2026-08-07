@@ -13,6 +13,15 @@ if(($_POST['action']??'')==='cancel'){
  $db->begin_transaction();try{$db->query("DELETE FROM builds WHERE userid=$uid AND slot=$slot");if($toLevel===1)$db->query("DELETE FROM facility_positions WHERE userid=$uid AND slot=$slot");$db->query("UPDATE strongholds SET ressis='$rs' WHERE userid=$uid");$db->commit();}catch(Throwable$e){$db->rollback();throw$e;}
  json_out(['ok'=>true,'result'=>'canceled','message'=>'Construction canceled — half the resources were recovered.','slot'=>$slot]);
 }
+// Clearing a misplaced gun. No refund: the cost of getting a firing line wrong is
+// the point, otherwise placement carries no risk.
+if(($_POST['action']??'')==='demolish'){
+ $eid=(int)($_POST['emplacement']??0);
+ if($eid<=0)json_err('bad_emplacement','No emplacement given.');
+ $db->query("DELETE FROM emplacements WHERE id=$eid AND userid=$uid");
+ if(!$db->affected_rows)json_out(['ok'=>false,'result'=>'not_found','message'=>'That emplacement is already gone.','slot'=>$slot]);
+ json_out(['ok'=>true,'result'=>'demolished','message'=>'Emplacement cleared.','slot'=>$slot]);
+}
 // Emplacements are placed repeatedly and raised immediately: a defence is a dozen
 // guns, and queueing them one at a time behind the single construction slot would
 // make laying out a firing line take an entire night.

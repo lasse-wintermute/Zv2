@@ -128,7 +128,7 @@ Level is shown by the existing label badge. **14 images, not 28.**
 
 ## The prompts
 
-### 17 — Headquarters (REGENERATE — the seat of the compound, must dominate)
+### 17 — Headquarters (done — rebuilt as an institutional block)
 
 The first attempt reads as another farmyard shed and gets lost among its neighbours.
 This one is drawn at 1.7× tile scale in the renderer, so it needs the mass to earn
@@ -182,7 +182,7 @@ SUBJECT: a salvage workshop shed with an open front bay, a gantry crane arm angl
 SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbed corrugated roller shutter doors set into the front wall, a stack of fuel drums against one side, and a stripped car wreck up on blocks tucked against the building.
 ```
 
-### 4 — Storage
+### 4 — Storage (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
@@ -190,7 +190,7 @@ SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbe
 SUBJECT: a hardened central storage hall with a reinforced double door and two rows of small barred windows, flanked on both sides by weathered shipping containers stacked two high, with wooden crates and supply pallets under a canvas tarp against the front wall.
 ```
 
-### 6 — Communication center (NEW — was missed in wave 1)
+### 6 — Communication center (REBUILD — scale anchor)
 
 Wave 1 was scoped off `FACILITY_KEYS` in config.js, which lists only facilities with a
 keyboard shortcut. The build menu is driven by the `facilities` table instead, and the
@@ -214,7 +214,12 @@ SUBJECT: a single-storey signals and communication hut with a flat roof, a wide 
 SUBJECT: a squat fortified concrete bunker with a narrow armoured firing slit, flanked by two tall slim watchtowers with open railed platforms and corrugated roofs, ringed at the base by a row of stacked sandbags and coils of razor wire on timber stakes. The watchtower legs, railings and roofs are dark rusted steel and weathered grey timber — solid, heavy, and never pink or magenta.
 ```
 
-### 9 — Power generator
+### 9 — Power generator (REBUILD — pilot the scale anchor here first)
+
+Worst of the set: the louvre and pipework are enormous against its own walls, so no
+scale multiplier can rescue it. This prompt carries the drum reference and stated
+dimensions. If it comes back in proportion, the other four rebuilds are worth the
+credits; if not, stop and tell me rather than spending 400 credits proving it twice.
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
@@ -254,7 +259,7 @@ SUBJECT: a modular research building made of two joined prefabricated pods, the 
 SUBJECT: a communal mess and rest house with warm yellow light spilling from its windows, a patched canvas awning over an outdoor seating area with mismatched scavenged chairs and a table, a rain barrel at the corner, a washing line strung along one side, and a small vegetable planter box beside the door.
 ```
 
-### 15 — Chemical laboratory
+### 15 — Chemical laboratory (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
@@ -270,7 +275,7 @@ SUBJECT: a sealed chemical laboratory with a heavy airtight door and small thick
 SUBJECT: a clinic building with two rows of clean lit windows, a large off-white medical cross panel mounted high on the front wall, a canvas triage canopy on poles extending over the entrance with a folding stretcher trolley beneath it, and a white medical supply tank standing against the right wall.
 ```
 
-### 18 — Radio tower
+### 18 — Radio tower (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.

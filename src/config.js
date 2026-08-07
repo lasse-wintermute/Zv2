@@ -110,6 +110,8 @@ const _FAC = [
 // Used to draw the coverage ring so a player can see what a gun actually holds
 // before committing the resources.
 export const FAC_RANGE = { 41: 5.5, 42: 2.5, 43: 1.2, 8: 1.8, 24: 4.0 };
+export const FAC_DPS = { 41: 9, 42: 26, 43: 0, 8: 5, 24: 4 };
+export const EMPLACEMENT_TYPES = [41, 42, 43];
 export const facRange = (type, level = 1) => {
   const base = FAC_RANGE[type];
   return base ? base + (Math.max(1, level) - 1) * 0.4 : 0;

@@ -108,12 +108,16 @@ export async function postRecruit(action, encounter, squad = 0) { return api('/a
 
 // Start a build/upgrade. Rule failures come back ok:false with HTTP 200,
 // so return the raw payload and let the caller show the message.
-export async function postBuild(slot, gridX = null, gridY = null) {
+export async function postBuild(slot, gridX = null, gridY = null, opts = {}) {
   const res = await fetch(`${BASE}/api/build.php`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body: new URLSearchParams({ slot: String(slot), ...(gridX === null ? {} : { gridX: String(gridX), gridY: String(gridY) }) }),
+    body: new URLSearchParams({
+      slot: String(slot),
+      ...(gridX === null || gridX === undefined ? {} : { gridX: String(gridX), gridY: String(gridY) }),
+      ...(opts.demolish ? { action: 'demolish', emplacement: String(opts.demolish) } : {}),
+    }),
   });
   if (res.status === 401) throw new ApiError('no_player', 'No active player', 401);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

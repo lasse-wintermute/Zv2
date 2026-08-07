@@ -35,7 +35,7 @@ import { createIdentity } from './identity.js';
 import { createRecruitEncounter } from './recruit.js';
 import { createAlly } from './ally.js';
 import { getIdentity, postIdentity, getAlly, postAlly, postActivity } from './net.js';
-import { RES, facInfo, fmtNum, fmtDuration, resIcon, resName, facKey, slotForKey } from './config.js';
+import { RES, facInfo, facRange, FAC_DPS, fmtNum, fmtDuration, resIcon, resName, facKey, slotForKey } from './config.js';
 
 // OG-style cost chips: icon + amount, red when you can't afford it.
 const costChips = (cost) => (cost || []).map((c) => `<i class="${c.enough === false ? 'cost-miss' : 'cost-ok'}"><em class="res-ic">${resIcon(c.res)}</em>${fmtNum(c.amount)}</i>`).join(' ');
@@ -661,6 +661,45 @@ function refreshBuildMenu() {
   openBuildMenu(hit, cx, cy);
 }
 
+// Emplacement popup. Deliberately not the facility menu: a gun has no staff, no
+// production and no upgrade path, and the reach is the only number that decides
+// whether it was worth placing -- so that goes first.
+function openEmplacementMenu(hit, cx, cy) {
+  view.setSelected(hit.slot);
+  requestRender();
+  const info = facInfo(hit.type);
+  const reach = facRange(hit.type, hit.level);
+  const dps = FAC_DPS[hit.type] ?? 0;
+  const items = [{
+    info: true,
+    label: dps ? `Reach ${reach.toFixed(1)} tiles · ${dps} damage` : `Reach ${reach.toFixed(1)} tiles · holds walkers`,
+    small: 'shown as a ring on the map while selected',
+    tip: 'A wave is only damaged inside this ring. Cover a lane the walkers actually use.',
+  }];
+  items.push({ info: true, label: EMPLACEMENT_BLURB[hit.type] || '' });
+  items.push({
+    key: 'x', label: 'Demolish',
+    small: 'clears the plot — no refund',
+    onClick: async () => {
+      setStatus('Demolishing…');
+      try {
+        const r = await postBuild(hit.type, undefined, undefined, { demolish: hit.emplacementId });
+        if (!r.ok) throw new Error(r.message || 'Could not demolish.');
+        view.setSelected(null);
+        await load();
+        setStatus(r.message || 'Emplacement cleared.', false, 'good');
+      } catch (err) { setStatus(err.message, true); }
+    },
+  });
+  context.openAt(cx, cy, info.name, items, `emplacement · level ${hit.level}`, 'emplacement');
+}
+
+const EMPLACEMENT_BLURB = {
+  41: 'Long reach, single targets. Thins a lane before it closes.',
+  42: 'Short reach, heavy fire. Shreds a packed lane.',
+  43: 'No damage. Stalls walkers where your guns can reach them.',
+};
+
 // Facility popup, context-menu style (same pattern as the build menu):
 // compact info at the cursor — level, construction countdown, next cost,
 // staffing — with Upgrade (U) and full Details (D) actions.
@@ -739,6 +778,7 @@ function openContextMenu(e) {
     const hit = view.pick(x, y);
     if (!hit) return;
     if (hit.empty) { openBuildMenu(hit, e.clientX, e.clientY); return; }
+    if (hit.emplacementId) { openEmplacementMenu(hit, e.clientX, e.clientY); return; }
     openFacilityMenu(hit.slot, e.clientX, e.clientY);
     return;
   }
