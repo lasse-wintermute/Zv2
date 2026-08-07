@@ -364,8 +364,12 @@ function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):ar
         // would stop the next one -- a spiral the player cannot build out of.
         $loss=min((int)ceil($breach/3),(int)floor((float)($resources[1]??0)*.04));$resources[1]=max(0,(float)($resources[1]??0)-$loss);
         $victims=$breach<20?0:1+(int)floor($breach/60);
-        $q=$db->query("SELECT id,hp FROM survivors WHERE userid=$uid AND hp>0 ORDER BY job_facility IS NULL DESC,id LIMIT $victims");
-        while($q&&($sv=$q->fetch_assoc())){$vid=(int)$sv['id'];$hit=min((int)$sv['hp'],max(1,(int)ceil($breach/2)));if($wounded===null){$wounded=$vid;$damage=$hit;}$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$hit),fatigue=LEAST(100,fatigue+10) WHERE id=$vid");}
+        // A wound, not an execution. At breach/2 a hit was 40-odd damage against a
+        // survivor with 14 hp, so the harness wiped every roster inside 20 waves --
+        // and waves now land every six minutes. Capped to a third of maximum health
+        // so casualties accumulate and can be treated rather than being terminal.
+        $q=$db->query("SELECT id,hp,max_hp FROM survivors WHERE userid=$uid AND hp>0 ORDER BY job_facility IS NULL DESC,id LIMIT $victims");
+        while($q&&($sv=$q->fetch_assoc())){$vid=(int)$sv['id'];$cap=max(2,(int)ceil((int)$sv['max_hp']/3));$hit=min((int)$sv['hp'],max(1,min($cap,(int)ceil($breach/6))));if($wounded===null){$wounded=$vid;$damage=$hit;}$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$hit),fatigue=LEAST(100,fatigue+10) WHERE id=$vid");}
     }
     $success=$breach===0?1:0;$wid=$wounded===null?'NULL':(string)$wounded;$now=time();$db->query("INSERT INTO raids(userid,day_number,threat,defense,success,resource_loss,wounded_survivor,damage,created_at) VALUES($uid,$day,$threat,$defense,$success,$loss,$wid,$damage,$now) ON DUPLICATE KEY UPDATE threat=VALUES(threat),defense=VALUES(defense),success=VALUES(success),resource_loss=VALUES(resource_loss),wounded_survivor=VALUES(wounded_survivor),damage=VALUES(damage),created_at=VALUES(created_at)");
     return['day'=>$day,'threat'=>$threat,'defense'=>$defense,'success'=>(bool)$success,'resourceLoss'=>$loss,'woundedSurvivor'=>$wounded,'damage'=>$damage,'wave'=>$wave];
@@ -417,7 +421,16 @@ function zv2_simulate_wave(int $uid, int $day, int $threat, array $effects): arr
     }
 
     $lanes = zv2_wave_lanes($uid, $structures, $facilities);
-    if (!$lanes) return ['spawned' => 0, 'killed' => 0, 'leaked' => 0, 'lanes' => [], 'towers' => [], 'sealed' => true];
+    if (!$lanes) {
+        // Sealed in. Reporting nothing through was an exploit the balance harness
+        // found at once: a bot that walled itself in with sheds and built no guns
+        // still held 60% of its waves, because no path meant no walkers. There is
+        // no safe hiding place -- with nowhere to walk they tear into whatever is
+        // in the way, and the whole wave counts as through.
+        $total = max(4, (int)round($threat * 1.6));
+        return ['spawned' => $total, 'killed' => 0, 'leaked' => $total,
+                'lanes' => [], 'towers' => [], 'sealed' => true];
+    }
 
     // Wave size tracks the same pressure curve the old raid used, so the ramp a
     // player already knows is unchanged -- only how it is resisted has changed.
