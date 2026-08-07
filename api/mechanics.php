@@ -293,7 +293,16 @@ function zv2_wave_lanes(int $uid, array $structures, array $facilities): array {
     // That leaves the gateways as the only way in, which is the whole point of a
     // perimeter -- without it walkers would stroll over the wall line.
     foreach ($structures as $s) if ($s['kind'] === 'house' || $s['kind'] === 'wall') $blocked["{$s['gridX']}|{$s['gridY']}"] = true;
-    foreach ($facilities as $f) $blocked["{$f['gridX']}|{$f['gridY']}"] = true;
+    // Buildings are solid; guns are not. A sniper nest is a platform on legs and a
+    // gun tower is a firing position -- a walker goes past one, it does not stop at
+    // it. Treating them as walls let a dense firing line seal the compound, and the
+    // balance harness found the consequence at once: seventeen emplacements killed
+    // nothing at all, because with every route blocked there was no lane to fire on.
+    // The barricade still blocks, since obstructing a lane is the whole of its job.
+    foreach ($facilities as $f) {
+        if (in_array($f['slot'], [41, 42], true)) continue;
+        $blocked["{$f['gridX']}|{$f['gridY']}"] = true;
+    }
 
     // Head for the headquarters when it is placed, otherwise the middle of the map.
     $core = [intdiv($w, 2), intdiv($h, 2)];

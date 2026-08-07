@@ -68,6 +68,11 @@ $POLICIES = [
     'balanced' => [1, 42, 2, 41, 3, 42, 1, 41, 2, 43, 3, 42, 41],
     // Builds facilities in catalogue order and never defends: the control.
     'naive'    => [1, 2, 3, 4, 6, 9, 10, 11, 12, 13, 16, 18],
+    // Buys nothing but guns, so it banks income until one is affordable. The other
+    // policies buy the first affordable thing every step and therefore never save,
+    // which understates how many guns a deliberate player could field. This is the
+    // upper bound on defence the economy can support.
+    'saver'    => [42, 41, 43],
 ];
 
 function cost_of(int $type, int $level): ?array {
@@ -156,7 +161,24 @@ for ($step = 1; $step <= $steps; $step++) {
             if (!$afford) continue;
             foreach ($cost as $k => $need) $res[$k] -= $need;
             if ($isGun) {
-                $pref = $p['lanes'] ?: [[intdiv(ZV2_GRID_W, 2), ZV2_GRID_H - 3]];
+                // Place against the lanes that actually exist, spread across them.
+                // Piling everything at one gate is what the first version did, and
+                // it sealed that gate with its own barricades: the wave used the
+                // other three doors and every gun sat out of range of all of them.
+                if ($p['lanes'] === null) {
+                    $facs = [];
+                    $fq = $db->query("SELECT slot,grid_x,grid_y FROM facility_positions WHERE userid=$uid");
+                    while ($fq && ($fr = $fq->fetch_assoc())) $facs[] = ['slot' => (int)$fr['slot'],
+                        'gridX' => (int)$fr['grid_x'], 'gridY' => (int)$fr['grid_y']];
+                    foreach (zv2_emplacements($uid) as $e) $facs[] = ['slot' => $e['type'],
+                        'gridX' => $e['gridX'], 'gridY' => $e['gridY']];
+                    $cells = [];
+                    foreach (zv2_wave_lanes($uid, zv2_structures($uid), $facs) as $lane)
+                        foreach (array_slice($lane['path'], 1, 6) as $c) $cells[] = $c;
+                    $p['lanes'] = $cells ?: [[intdiv(ZV2_GRID_W, 2), ZV2_GRID_H - 3]];
+                }
+                // Rotate the aim point so guns land on different lanes in turn.
+                $pref = [$p['lanes'][$p['spent'] % count($p['lanes'])]];
                 $cell = pick_cell($uid, $pref);
                 if (!$cell) break;
                 $db->query("INSERT INTO emplacements(userid,type,grid_x,grid_y,level,built_at)
