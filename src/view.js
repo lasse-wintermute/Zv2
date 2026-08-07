@@ -302,6 +302,33 @@ export function createView(canvas) {
       ctx.beginPath(); ctx.moveTo(sx - w, sy - 4); ctx.lineTo(sx + w, sy - 12); ctx.stroke(); }
   }
 
+  // Emplacements: small, hard-edged and unmistakably military, so a firing line
+  // reads as a firing line against the softer settlement behind it.
+  function emplacement(sx, sy, g) {
+    ctx.beginPath(); ctx.ellipse(sx, sy + 7, 20, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fill();
+    if (g.type === 43) {                                   // barricade: no tower, just a wall of scrap
+      ctx.fillStyle = '#6b6252';
+      for (let i = -2; i <= 2; i++) { const w = 7 - Math.abs(i); ctx.fillRect(sx + i * 8 - w / 2, sy - 8 - Math.abs(i), w, 11); }
+      ctx.strokeStyle = '#3b372c'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(sx - 20, sy - 4); ctx.lineTo(sx + 20, sy - 9); ctx.stroke();
+      return;
+    }
+    const sniper = g.type === 41, h = sniper ? 30 : 20;
+    ctx.fillStyle = '#4d4a3c';                              // legs
+    for (const dx of [-8, 8]) { ctx.beginPath(); ctx.moveTo(sx + dx, sy + 3); ctx.lineTo(sx + dx * .45, sy - h); ctx.lineWidth = 3; ctx.strokeStyle = '#4d4a3c'; ctx.stroke(); }
+    ctx.fillStyle = sniper ? '#6c6a52' : '#5c5f4e';         // platform
+    ctx.beginPath(); ctx.moveTo(sx, sy - h - 6); ctx.lineTo(sx + 12, sy - h); ctx.lineTo(sx, sy - h + 6); ctx.lineTo(sx - 12, sy - h); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#2b2c24'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#7d7a60';                              // sandbag lip
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.ellipse(sx + i * 7, sy - h - 1, 4, 2.4, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = '#23241d'; ctx.lineWidth = 2;         // the weapon
+    ctx.beginPath(); ctx.moveTo(sx - 2, sy - h - 3);
+    if (sniper) ctx.lineTo(sx + 14, sy - h - 9); else ctx.lineTo(sx + 11, sy - h - 4);
+    ctx.stroke();
+    if (g.level > 1) { ctx.fillStyle = '#d7bf55'; ctx.beginPath(); ctx.arc(sx - 11, sy - h - 4, 2.2, 0, Math.PI * 2); ctx.fill(); }
+  }
+
   // Coverage ring for the selected emplacement: the honest footprint of what it
   // can reach, drawn on the ground plane so it can be compared against the lanes.
   function rangeRing(sx, sy, tiles) {
@@ -378,8 +405,10 @@ export function createView(canvas) {
     // Houses and gateways hold their cells against construction, so they count as
     // occupied for the empty-plot pass just as facilities do.
     const structures = (state.structures || []).map((s) => ({ ...s, r: s.gridY, c: s.gridX }));
+    const guns = (state.emplacements || []).map((e) => ({ ...e, r: e.gridY, c: e.gridX }));
     const compoundPoints=[];emptyPlacements=[];
-    const occupied=new Set([...placed.map(f=>`${f.c}|${f.r}`), ...structures.map(s=>`${s.c}|${s.r}`)]);
+    const occupied=new Set([...placed.map(f=>`${f.c}|${f.r}`), ...structures.map(s=>`${s.c}|${s.r}`),
+                            ...guns.map(g=>`${g.c}|${g.r}`)]);
     let selCell=null;
     for (const cell of gridCells) {
       const [ox, oy] = isoXY(cell.r, cell.c);
@@ -398,6 +427,7 @@ export function createView(canvas) {
     const drawList = [
       ...placed.map((f) => ({ kind: 'facility', r: f.r, c: f.c, f })),
       ...structures.map((s) => ({ kind: s.kind, r: s.r, c: s.c, s })),
+      ...guns.map((g) => ({ kind: 'gun', r: g.r, c: g.c, g })),
     ].sort((a, b) => (a.r + a.c) - (b.r + b.c));
 
     // Coverage ring goes under everything so buildings are never obscured by it.
@@ -420,6 +450,9 @@ export function createView(canvas) {
         if (b) badges.push({ sx, sy, b });
       } else if (item.kind === 'house') {
         house(sx, sy, item.s);
+      } else if (item.kind === 'gun') {
+        emplacement(sx, sy, item.g);
+        placements.push({ slot: item.g.type, type: item.g.type, emplacementId: item.g.id, sx, sy, level: item.g.level });
       } else {
         gate(sx, sy, item.s);
       }

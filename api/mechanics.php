@@ -163,28 +163,48 @@ function zv2_ensure_compound(int $uid): void {
     $q = $db->query("SELECT grid_x,grid_y FROM facility_positions WHERE userid=$uid");
     while ($q && ($f = $q->fetch_assoc())) $taken["{$f['grid_x']}|{$f['grid_y']}"] = true;
 
-    // Houses sit in the interior in loose terraces, never touching each other, so
-    // the gaps between them read as streets and become the lanes walkers follow.
+    // Houses go down as terraces -- short runs of adjoining houses along a street,
+    // the way a walled town like Woodbury reads. Scattering them one to a cell with
+    // gaps all round produced a field of huts, not a settlement, and left every
+    // route open so no lane was ever forced.
     $rand = zv2_seeded($uid * 7919 + 13);
-    $cells = [];
-    for ($y = 2; $y <= $h - 3; $y++) for ($x = 2; $x <= $w - 3; $x++) $cells[] = [$x, $y];
-    for ($i = count($cells) - 1; $i > 0; $i--) { $j = $rand($i + 1); [$cells[$i], $cells[$j]] = [$cells[$j], $cells[$i]]; }
-
     $core = [intdiv($w, 2), intdiv($h, 2)];
-    $houses = 0;
-    foreach ($cells as [$x, $y]) {
+    $free = function (int $x, int $y) use (&$taken, $w, $h, $core): bool {
+        if ($x < 2 || $y < 2 || $x > $w - 3 || $y > $h - 3) return false;
+        if (isset($taken["$x|$y"])) return false;
+        if (abs($x - $core[0]) <= 1 && abs($y - $core[1]) <= 1) return false;   // keep the core clear
+        return true;
+    };
+
+    // Terrace rows sit on alternating bands with a clear street between them, and
+    // never span the middle columns, so the main gate always has a way in.
+    $bands = [3, 6, 10, 13];
+    for ($i = count($bands) - 1; $i > 0; $i--) { $j = $rand($i + 1); [$bands[$i], $bands[$j]] = [$bands[$j], $bands[$i]]; }
+
+    $houses = 0; $variant = $rand(4);
+    foreach ($bands as $y) {
         if ($houses >= 10) break;
-        if (isset($taken["$x|$y"])) continue;
-        if (abs($x - $core[0]) <= 1 && abs($y - $core[1]) <= 1) continue;   // keep the core clear
-        $touching = false;
-        for ($dy = -1; $dy <= 1 && !$touching; $dy++)
-            for ($dx = -1; $dx <= 1; $dx++)
-                if (isset($taken["" . ($x + $dx) . "|" . ($y + $dy)])) { $touching = true; break; }
-        if ($touching) continue;
-        $taken["$x|$y"] = true;
-        $rows[] = [$x, $y, 'house', '', $rand(4)];
-        $houses++;
+        $run = 2 + $rand(3);                       // terraces of two to four
+        $left = $rand(2) === 0;
+        $x = $left ? 2 + $rand(3) : $w - 3 - $run - $rand(3);
+        for ($k = 0; $k < $run && $houses < 10; $k++, $x++) {
+            if (!$free($x, $y)) continue;
+            $taken["$x|$y"] = true;
+            $rows[] = [$x, $y, 'house', '', ($variant + $houses) % 4];
+            $houses++;
+        }
     }
+    // Top up with singles if the terraces could not place the full ten.
+    for ($y = 2; $y <= $h - 3 && $houses < 10; $y++)
+        for ($x = 2; $x <= $w - 3 && $houses < 10; $x++) {
+            if (!$free($x, $y)) continue;
+            $near = false;
+            for ($dx = -1; $dx <= 1 && !$near; $dx++) if (isset($taken["" . ($x + $dx) . "|$y"])) $near = true;
+            if ($near) continue;
+            $taken["$x|$y"] = true;
+            $rows[] = [$x, $y, 'house', '', ($variant + $houses) % 4];
+            $houses++;
+        }
 
     foreach ($rows as $row) {
         [$x, $y, $kind, $facing] = [$row[0], $row[1], $row[2], $row[3]];
@@ -193,6 +213,20 @@ function zv2_ensure_compound(int $uid): void {
         $db->query("INSERT IGNORE INTO compound_structures(userid,kind,grid_x,grid_y,facing,hp,max_hp,variant)
                     VALUES($uid,'$kind',$x,$y,'$facing',$hp,$hp,$variant)");
     }
+}
+
+/** Facility ids that are emplacements: placed repeatedly, not one per compound. */
+const ZV2_EMPLACEMENT_TYPES = [41, 42, 43];
+
+/** Every gun in the compound. Unlike facilities these are many per type. */
+function zv2_emplacements(int $uid): array {
+    global $db; $out = [];
+    $r = $db->query("SELECT id,type,grid_x,grid_y,level FROM emplacements WHERE userid=$uid ORDER BY id");
+    while ($r && ($e = $r->fetch_assoc())) $out[] = [
+        'id' => (int)$e['id'], 'type' => (int)$e['type'],
+        'gridX' => (int)$e['grid_x'], 'gridY' => (int)$e['grid_y'], 'level' => (int)$e['level'],
+    ];
+    return $out;
 }
 
 /** Every structure in the compound, as the client and the wave sim both need it. */
@@ -293,22 +327,31 @@ function zv2_simulate_wave(int $uid, int $day, int $threat, array $effects): arr
     if ($r && $r->num_rows) foreach (explode('|', (string)$r->fetch_assoc()['buildings']) as $i => $v) $levels[$i + 1] = (int)$v;
 
     $facilities = []; $towers = [];
+    $arm = function (array $entry, int $type, int $lvl) use (&$towers) {
+        if (!isset(ZV2_DEFENSE_STATS[$type])) return;
+        $stat = ZV2_DEFENSE_STATS[$type];
+        $lvl = max(1, $lvl);
+        $towers[] = $entry + [
+            'range' => $stat['range'] + ($lvl - 1) * 0.4,
+            'dps'   => $stat['dps'] * $lvl,
+            'slow'  => $stat['slow'] ?? 0,
+            'label' => $stat['label'],
+            'kills' => 0,
+        ];
+    };
     $q = $db->query("SELECT slot,grid_x,grid_y FROM facility_positions WHERE userid=$uid");
     while ($q && ($f = $q->fetch_assoc())) {
         $slot = (int)$f['slot'];
         $entry = ['slot' => $slot, 'gridX' => (int)$f['grid_x'], 'gridY' => (int)$f['grid_y']];
         $facilities[] = $entry;
-        if (isset(ZV2_DEFENSE_STATS[$slot])) {
-            $stat = ZV2_DEFENSE_STATS[$slot];
-            $lvl = max(1, $levels[$slot] ?? 1);
-            $towers[] = $entry + [
-                'range' => $stat['range'] + ($lvl - 1) * 0.4,
-                'dps'   => $stat['dps'] * $lvl,
-                'slow'  => $stat['slow'] ?? 0,
-                'label' => $stat['label'],
-                'kills' => 0,
-            ];
-        }
+        $arm($entry, $slot, $levels[$slot] ?? 1);
+    }
+    // Emplacements are many-per-type and live in their own table, but they block
+    // lanes and shoot exactly like a defensive facility does.
+    foreach (zv2_emplacements($uid) as $e) {
+        $entry = ['slot' => $e['type'], 'gridX' => $e['gridX'], 'gridY' => $e['gridY']];
+        $facilities[] = $entry;
+        $arm($entry, $e['type'], $e['level']);
     }
 
     $lanes = zv2_wave_lanes($uid, $structures, $facilities);
