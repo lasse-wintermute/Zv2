@@ -530,7 +530,7 @@ export function createView(canvas) {
   function setSelected(slot) { selected = slot; if (slot != null) selectedCell = null; }
   function setSelectedCell(gx, gy) { selectedCell = (gx == null ? null : { gx, gy }); if (selectedCell) selected = null; }
 
-  function setZoom(value){cam.zoom=Math.max(.55,Math.min(2,value));}
+  function setZoom(value){cam.zoom=Math.max(.55,Math.min(4,value));}
   function setWorldZoom(value){cam.worldZoom=Math.max(.42,Math.min(2.2,value));}
   function setRotation(rad){cam.rot=rad%(Math.PI*2);}
   // center the compound camera on a grid cell (facility-list jump)

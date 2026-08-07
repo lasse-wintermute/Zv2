@@ -508,12 +508,13 @@ let drag = null, moved = false, rightDrag = null;
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('pointerdown', (e) => {
   if (!playing) return;
-  // SOTD right-drag rotate, world map only. The compound is built from fixed
-  // 2:1 isometric sprites drawn from one camera angle, so rotating it tilts the
-  // buildings instead of orbiting them.
+  // SOTD right-drag rotate, world map only: the compound is built from fixed 2:1
+  // isometric sprites drawn from one camera angle, so rotating it tilts the
+  // buildings instead of orbiting them. Track the press on both maps regardless --
+  // pointerup needs it to tell a right-click from a right-drag, and skipping it
+  // here is what killed the compound's right-click menu.
   if (e.button === 2) {
-    if (mode !== 'world') return;
-    rightDrag = { x: e.clientX, rot0: view.cam.rot, moved: false };
+    rightDrag = { x: e.clientX, rot0: view.cam.rot, moved: false, rotate: mode === 'world' };
     try { canvas.setPointerCapture(e.pointerId); } catch { /* synthetic events */ }
     return;
   }
@@ -555,9 +556,11 @@ canvas.addEventListener('pointermove', (e) => {
   if (rightDrag) {
     const dx = e.clientX - rightDrag.x;
     if (Math.abs(dx) > 4) rightDrag.moved = true;
-    view.setRotation(rightDrag.rot0 + dx * Math.PI / 450);   // ~10° per 25px
-    updateCompass();
-    requestRender();
+    if (rightDrag.rotate) {
+      view.setRotation(rightDrag.rot0 + dx * Math.PI / 450);   // ~10° per 25px
+      updateCompass();
+      requestRender();
+    }
     return;
   }
   if (!drag) return;
@@ -667,22 +670,17 @@ async function openFacilityMenu(slot, cx, cy) {
   if (d.building) {
     const remaining = Math.max(0, d.building.due - Date.now() / 1000);
     items.push({ info: true, label: `⏳ Upgrading to level ${d.building.toLevel}`, small: remaining > 0 ? fmtDuration(remaining) + ' remaining' : 'finishing…' });
-  } else if (!d.atMax) {
-    const miss = missingList(d.nextCost);
-    items.push({
-      info: true,
-      label: `Upgrade to level ${d.nextLevel}:`,
-      html: `<span>Upgrade to level ${d.nextLevel}:</span><small>${(d.nextCost || []).length ? costChips(d.nextCost) : 'free'}${miss.length ? `<br><b class="cost-miss">Missing: ${miss.join(', ')}</b>` : ''}</small>`,
-      tip: (d.nextCost || []).map((c) => `${resIcon(c.res)} ${resName(c.res)}: ${fmtNum(c.owned ?? 0)} owned / ${fmtNum(c.amount)} needed`).join('\n'),
-    });
   }
   const staffing = d.staffing || { capacity: 0, survivors: [] };
   const assigned = (staffing.survivors || []).filter((s) => s.jobFacility === d.slot).length;
   if (staffing.capacity) items.push({ info: true, label: `Staff: ${assigned}/${staffing.capacity} assigned`, small: staffing.effect || '', tip: 'Assign survivors in Details — workers boost this facility but leave the raiding crew' });
+  // One upgrade row, not two. The cost used to sit on a separate info row above
+  // this one with nearly identical wording, so the inert copy read as the control
+  // and clicking it did nothing -- the real button was below the staffing line.
   if (!d.building && !d.atMax) items.push({
     key: 'u', label: `Upgrade to level ${d.nextLevel}`,
-    smallHtml: d.canUpgrade ? undefined : (missChips(d.nextCost) ? `<b class="cost-miss">Missing: ${missChips(d.nextCost)}</b>` : undefined),
-    small: d.canUpgrade || missChips(d.nextCost) ? undefined : (d.upgradeReason || 'Unavailable'),
+    smallHtml: `${(d.nextCost || []).length ? costChips(d.nextCost) : 'free'}`
+      + (missChips(d.nextCost) ? `<br><b class="cost-miss">Missing: ${missChips(d.nextCost)}</b>` : ''),
     disabled: !d.canUpgrade,
     tip: [`Upgrade benefits:\n${(d.upgradeBenefits || ['Improves this facility.']).map((benefit) => `• ${benefit}`).join('\n')}`, d.canUpgrade ? 'Start construction now' : (missingList(d.nextCost).length ? 'Still needed: ' + missingList(d.nextCost).join(', ') : (d.upgradeReason || ''))].filter(Boolean).join('\n\n'),
     onClick: async () => {

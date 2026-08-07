@@ -410,17 +410,19 @@ body.playing .gameheader{display:flex}
 .eventlog-list .fac-busy{font-style:normal;font-size:10px}
 
 /* right-click context menu (SOTD ctxpanel) */
-.ctxmenu{position:fixed;z-index:60;min-width:190px;max-width:280px;max-height:min(430px,62vh);overflow-y:auto;background:linear-gradient(150deg,rgba(34,38,32,.98),rgba(14,18,15,.98));border:1px solid #6b6040;border-radius:8px;box-shadow:0 16px 50px rgba(0,0,0,.65)}
+/* Context menu type runs ~15% larger than the surrounding chrome; the width
+   caps scale with it so the extra size does not just buy extra wrapping. */
+.ctxmenu{position:fixed;z-index:60;min-width:219px;max-width:322px;max-height:min(430px,62vh);overflow-y:auto;background:linear-gradient(150deg,rgba(34,38,32,.98),rgba(14,18,15,.98));border:1px solid #6b6040;border-radius:8px;box-shadow:0 16px 50px rgba(0,0,0,.65)}
 .ctxmenu header{display:grid;gap:1px;padding:9px 11px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(214,180,100,.18)}
-.ctxmenu header b{color:#f0deae;font-size:13px}
-.ctxmenu header small{color:#9b937c;font-size:10px}
-.ctxmenu button{display:grid;gap:1px;width:100%;text-align:left;padding:9px 11px;border:0;border-top:1px solid rgba(255,255,255,.04);background:none;color:#e2d8bf;font-size:12px;cursor:pointer}
+.ctxmenu header b{color:#f0deae;font-size:15px}
+.ctxmenu header small{color:#9b937c;font-size:11.5px}
+.ctxmenu button{display:grid;gap:1px;width:100%;text-align:left;padding:9px 11px;border:0;border-top:1px solid rgba(255,255,255,.04);background:none;color:#e2d8bf;font-size:13.8px;cursor:pointer}
 .ctxmenu button:hover:not(:disabled){background:rgba(255,224,138,.09)}
 .ctxmenu button:disabled{color:#777161;cursor:default}
-.ctxmenu button small{color:#98907a;font-size:10px}
-.ctxmenu kbd{display:inline-block;min-width:14px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);font:600 9px system-ui;color:#e7cf9d;text-align:center;vertical-align:middle;margin-right:2px}
-.ctx-info{display:grid;gap:2px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.18);color:#c3baa2;font-size:11px;line-height:1.4}
-.ctx-info small{color:#a8a08c;font-size:10px}
+.ctxmenu button small{color:#98907a;font-size:11.5px}
+.ctxmenu kbd{display:inline-block;min-width:14px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);font:600 10.4px system-ui;color:#e7cf9d;text-align:center;vertical-align:middle;margin-right:2px}
+.ctx-info{display:grid;gap:2px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.18);color:#c3baa2;font-size:12.6px;line-height:1.4}
+.ctx-info small{color:#a8a08c;font-size:11.5px}
 .ctx-info small,.ctxmenu .ctx-info span{white-space:normal}
 .keyhint{font-style:normal;color:#9a8f7c;font-size:10px;font-weight:400}
 
@@ -432,7 +434,7 @@ body.playing .gameheader{display:flex}
 .cost-miss{font-style:normal;color:#ff8a7a;font-weight:700;white-space:nowrap}
 .cost-have{font-style:normal;color:#e2837a;font-size:10px;font-weight:400;margin-left:4px}
 .panel-missing{margin:2px 14px 8px;padding:7px 10px;border:1px solid rgba(200,90,70,.4);border-radius:5px;background:rgba(120,40,30,.18);color:#ffb3a6;font-size:12px;font-weight:600}
-.ctxmenu .ctx-info b.cost-miss{font-size:11px}
+.ctxmenu .ctx-info b.cost-miss{font-size:12.6px}
 .panel-cost li.missing b{color:#ff8a7a}
 
 /* OG resource-bar states: red at zero, blinking ! at cap */
