@@ -128,7 +128,7 @@ Level is shown by the existing label badge. **14 images, not 28.**
 
 ## The prompts
 
-### 17 — Headquarters (done — rebuilt as an institutional block)
+### 17 — Headquarters (REBUILD — lowest priority, reads well as-is)
 
 The first attempt reads as another farmyard shed and gets lost among its neighbours.
 This one is drawn at 1.7× tile scale in the renderer, so it needs the mass to earn
@@ -141,7 +141,7 @@ that the rest of the set shares.
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor architecture: stained bone-khaki concrete, corrugated metal, scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: an imposing five-storey institutional command block, heavy and monolithic like a converted prison or civic administration building, dominating everything around it. Long regular grids of small barred windows run across every floor, most dark and a few lit amber. A flat roof carries an aerial mast, satellite dishes, water tanks, air handling units and a sandbagged rooftop guard post behind a parapet. The ground floor is fortified: a reinforced double door behind a concrete blast wall, steel shutters, and sandbag emplacements at the corners. Squat projecting wings step down at either side to a lower entrance hall, and the whole structure sits on a raised concrete plinth. Brutalist, weather-stained, institutional — not a house, no pitched roof, no cottage.
+SUBJECT: an imposing five-storey institutional command block, heavy and monolithic like a converted prison or civic administration building, dominating everything around it. Long regular grids of small barred windows run across every floor, most dark and a few lit amber. A flat roof carries an aerial mast, satellite dishes, water tanks, air handling units and a sandbagged rooftop guard post behind a parapet. The ground floor is fortified: a reinforced double door behind a concrete blast wall, steel shutters, and sandbag emplacements at the corners. Squat projecting wings step down at either side to a lower entrance hall, and the whole structure sits on a raised concrete plinth. Brutalist, weather-stained, institutional — not a house, no pitched roof, no cottage. The block is five storeys, 20 metres by 16 metres and 18 metres tall. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
 ### 17 — Headquarters (original prompt, superseded)
@@ -152,7 +152,7 @@ SUBJECT: an imposing five-storey institutional command block, heavy and monolith
 SUBJECT: a fortified headquarters campus — a tall central administration house with a hipped rust-red roof and three rows of small lit windows, flanked by two lower service buildings and a gatehouse arranged around an open courtyard, a garage wing with a roller shutter door, two small water tanks, brick chimneys, and a thin radio aerial rising from the central roof.
 ```
 
-### 1 — Life support (KEEP AS IS — no regeneration)
+### 1 — Life support (REBUILD — scale anchor)
 
 It originally read too close to `headquarters`, having been generated straight after
 it with the HQ image still attached as a reference. Resolved from the other end
@@ -163,26 +163,26 @@ it is ever rebuilt.
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a squat industrial water treatment plant, entirely functional with no living quarters — three enormous riveted teal-grey cylindrical tanks of differing heights dominate the composition and are the tallest thing present, standing on short steel legs above a low flat-roofed concrete pump house barely half their height. A tangle of thick pipes, valve wheels, pressure gauges and a settling basin wraps around the base. Strictly single storey, flat roof, no pitched or hipped roof, no upper floors, no rows of lit windows, no house, no fence, no yard.
+SUBJECT: a squat industrial water treatment plant, entirely functional with no living quarters — three enormous riveted teal-grey cylindrical tanks of differing heights dominate the composition and are the tallest thing present, standing on short steel legs above a low flat-roofed concrete pump house barely half their height. A tangle of thick pipes, valve wheels, pressure gauges and a settling basin wraps around the base. Strictly single storey, flat roof, no pitched or hipped roof, no upper floors, no rows of lit windows, no house, no fence, no yard. The pump house is 10 metres by 8 metres and 4 metres tall; the tanks stand 9 metres. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 2 — Scrapyard
-
-```
-2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
-
-SUBJECT: a salvage workshop shed with an open front bay, a gantry crane arm angling up and over the roof from a lattice mast on the left, and piles of rusted scrap metal, stacked bald tyres and crushed car body panels heaped against the front and side of the shed. The crane mast and jib are dark rusted steel with flaking faded yellow paint — solid, heavy, and never pink or magenta.
-```
-
-### 3 — Garage
+### 2 — Scrapyard (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbed corrugated roller shutter doors set into the front wall, a stack of fuel drums against one side, and a stripped car wreck up on blocks tucked against the building.
+SUBJECT: a salvage workshop shed with an open front bay, a gantry crane arm angling up and over the roof from a lattice mast on the left, and piles of rusted scrap metal, stacked bald tyres and crushed car body panels heaped against the front and side of the shed. The crane mast and jib are dark rusted steel with flaking faded yellow paint — solid, heavy, and never pink or magenta. The workshop is 14 metres by 10 metres and 6 metres to the eaves; the crane mast is 11 metres. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 4 — Storage (REBUILD — scale anchor)
+### 3 — Garage (REBUILD — scale anchor)
+
+```
+2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
+
+SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbed corrugated roller shutter doors set into the front wall, a stack of fuel drums against one side, and a stripped car wreck up on blocks tucked against the building. The garage is 18 metres by 10 metres and 5.5 metres to the eaves. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
+```
+
+### 4 — Storage (done — rebuilt with the anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
@@ -190,7 +190,7 @@ SUBJECT: a broad low vehicle garage, wider than it is tall, with two large ribbe
 SUBJECT: a hardened central storage hall with a reinforced double door and two rows of small barred windows, flanked on both sides by weathered shipping containers stacked two high, with wooden crates and supply pallets under a canvas tarp against the front wall.
 ```
 
-### 6 — Communication center (REBUILD — scale anchor)
+### 6 — Communication center (done — rebuilt with the anchor)
 
 Wave 1 was scoped off `FACILITY_KEYS` in config.js, which lists only facilities with a
 keyboard shortcut. The build menu is driven by the `facilities` table instead, and the
@@ -206,15 +206,15 @@ antennas, not a tall mast.
 SUBJECT: a single-storey signals and communication hut with a flat roof, a wide window of glowing green monitor screens along the front wall and a heavy cable trunk running into the side. Three squat dish antennas of different sizes are bolted directly to the roof at different angles, alongside a bank of grey equipment cabinets and a small whip aerial. Low and wide, no tall mast, no lattice tower — the dishes sit low on the roof. The dish frames and cabinets are dark rusted steel and grey enamel, never pink or magenta.
 ```
 
-### 8 — Fortifications
+### 8 — Fortifications (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a squat fortified concrete bunker with a narrow armoured firing slit, flanked by two tall slim watchtowers with open railed platforms and corrugated roofs, ringed at the base by a row of stacked sandbags and coils of razor wire on timber stakes. The watchtower legs, railings and roofs are dark rusted steel and weathered grey timber — solid, heavy, and never pink or magenta.
+SUBJECT: a squat fortified concrete bunker with a narrow armoured firing slit, flanked by two tall slim watchtowers with open railed platforms and corrugated roofs, ringed at the base by a row of stacked sandbags and coils of razor wire on timber stakes. The watchtower legs, railings and roofs are dark rusted steel and weathered grey timber — solid, heavy, and never pink or magenta. The bunker is 10 metres by 8 metres and 3.5 metres tall; the watchtowers stand 9 metres. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 9 — Power generator (REBUILD — pilot the scale anchor here first)
+### 9 — Power generator (done — the anchor pilot, it worked)
 
 Worst of the set: the louvre and pipework are enormous against its own walls, so no
 scale multiplier can rescue it. This prompt carries the drum reference and stated
@@ -227,36 +227,36 @@ credits; if not, stop and tell me rather than spending 400 credits proving it tw
 SUBJECT: a generator hall with a hipped roof and a louvred ventilation grille, a tall narrow smokestack rising from the right side of the roof, a large dark fuel tank standing against the left wall, and heavy insulated power cables sagging in a curve from the roof across the front of the building.
 ```
 
-### 10 — Troop quarters
+### 10 — Troop quarters (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a long low barracks block with a rust-red pitched roof and an evenly spaced row of shuttered windows, a covered timber porch running along the front with a bench and a rack of kit bags, a dark red pennant on a short pole at one end, and a low sandbag wall at the front corner.
+SUBJECT: a long low barracks block with a rust-red pitched roof and an evenly spaced row of shuttered windows, a covered timber porch running along the front with a bench and a rack of kit bags, a dark red pennant on a short pole at one end, and a low sandbag wall at the front corner. The barracks is 22 metres long, 7 metres deep and 4 metres to the eaves, strictly single storey. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 11 — Toolshop
-
-```
-2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
-
-SUBJECT: a smithy and workshop hall with a wide open front bay showing a glowing orange forge inside, a tall brick forge chimney rising from the right of the roof, an anvil and a work bench with crossed hammer and tongs just outside the bay, and bars of raw metal and timber stacked against the front left wall.
-```
-
-### 12 — Research center
+### 11 — Toolshop (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a modular research building made of two joined prefabricated pods, the taller left pod with a row of cool blue-lit windows and the lower right pod with a sealed airlock hatch, a large parabolic dish antenna angled up from the roof on a lattice mount, and cable conduits running down the outside wall.
+SUBJECT: a smithy and workshop hall with a wide open front bay showing a glowing orange forge inside, a tall brick forge chimney rising from the right of the roof, an anvil and a work bench with crossed hammer and tongs just outside the bay, and bars of raw metal and timber stacked against the front left wall. The hall is 16 metres by 11 metres and 6 metres to the eaves. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 13 — Staff area
+### 12 — Research center (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a communal mess and rest house with warm yellow light spilling from its windows, a patched canvas awning over an outdoor seating area with mismatched scavenged chairs and a table, a rain barrel at the corner, a washing line strung along one side, and a small vegetable planter box beside the door.
+SUBJECT: a modular research building made of two joined prefabricated pods, the taller left pod with a row of cool blue-lit windows and the lower right pod with a sealed airlock hatch, a large parabolic dish antenna angled up from the roof on a lattice mount, and cable conduits running down the outside wall. Two stacked container storeys, 14 metres by 10 metres and 7 metres tall. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
+```
+
+### 13 — Staff area (REBUILD — scale anchor)
+
+```
+2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
+
+SUBJECT: a communal mess and rest house with warm yellow light spilling from its windows, a patched canvas awning over an outdoor seating area with mismatched scavenged chairs and a table, a rain barrel at the corner, a washing line strung along one side, and a small vegetable planter box beside the door. The house is 12 metres by 9 metres and 4.5 metres to the eaves, single storey. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
 ### 15 — Chemical laboratory (REBUILD — scale anchor)
@@ -264,18 +264,18 @@ SUBJECT: a communal mess and rest house with warm yellow light spilling from its
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a sealed chemical laboratory with a heavy airtight door and small thick green-tinted windows, a cluster of pipes and pressure valves along the outside wall, three squat chemical storage drums with hazard stripes stacked against the side, and a tall vent stack on the roof.
+SUBJECT: a sealed chemical laboratory with a heavy airtight door and small thick green-tinted windows, a cluster of pipes and pressure valves along the outside wall, three squat chemical storage drums with hazard stripes stacked against the side, and a tall vent stack on the roof. The laboratory is 12 metres by 9 metres and 4.5 metres to the eaves, single storey. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 16 — Hospital
+### 16 — Hospital (REBUILD — scale anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
 
-SUBJECT: a clinic building with two rows of clean lit windows, a large off-white medical cross panel mounted high on the front wall, a canvas triage canopy on poles extending over the entrance with a folding stretcher trolley beneath it, and a white medical supply tank standing against the right wall.
+SUBJECT: a clinic building with two rows of clean lit windows, a large off-white medical cross panel mounted high on the front wall, a canvas triage canopy on poles extending over the entrance with a folding stretcher trolley beneath it, and a white medical supply tank standing against the right wall. The clinic is two storeys, 16 metres by 11 metres and 8 metres tall. A standard rusted 200-litre oil drum stands upright against the wall beside the entrance, 0.88 metres tall — size everything else in the image against it.
 ```
 
-### 18 — Radio tower (REBUILD — scale anchor)
+### 18 — Radio tower (done — rebuilt with the anchor)
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor compound architecture: bone-khaki concrete and corrugated metal walls (#aaa68f), rust-red sheet-metal roofs (#8c4b3b), scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
