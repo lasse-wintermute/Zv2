@@ -26,15 +26,27 @@ There is no variation count and no content-type toggle on this model; each press
 Generate costs **20 credits** and returns one image. Budget roughly 14 × 20 = 280 credits
 for a clean first pass, more realistically 500–600 with retries.
 
-### Using Reference images (0/4)
+### Reference images: leave them EMPTY
 
-Generate **`headquarters` first** and download it. For the remaining 13, upload that
-image into Reference images to lock the palette and rendering style across the set.
+Early advice here was to generate `headquarters` first and feed it in as a style
+reference. **Don't.** It is not needed and it has already cost us one sprite.
 
-Watch for subject bleed: reference images in FLUX.2 carry *content* as well as style, so
-if the garage starts sprouting an admin tower, remove the reference and fall back to the
-prompt alone. Every prompt below repeats the full style block verbatim, so it stands up
-without a reference image — the reference is an accelerator, not a dependency.
+Reference images in FLUX.2 carry *content* as well as style. Life support was
+generated two minutes after headquarters with the reference attached and inherited
+its whole composition — same three-storey block, same lit windows, same fenced
+yard — so the two facilities were indistinguishable on the map.
+
+Nothing is lost by dropping it. Every prompt repeats the full style block verbatim:
+projection, light direction, palette hexes, framing, background. That is what has
+been holding the set together, and the thirteen anchored rebuilds coming back
+consistent with each other is the proof.
+
+It matters most for what is left. Three of the outstanding prompts are
+emplacements, and they spend their wording insisting they are *not* buildings —
+handing the model a building is precisely the wrong nudge.
+
+If real style drift ever does appear, reach for `garage` or `storage` — a plain,
+typical, anchored building. Never `headquarters`: it is the outlier of the set.
 
 ## Scale anchor (required on every regeneration)
 
@@ -143,8 +155,8 @@ This one is drawn at 1.7× tile scale in the renderer, so it needs the mass to e
 that room: a heavy institutional block, not a house. Keep the two-storey neighbours
 in mind — this should look like the building they were all built around.
 
-Generate with Reference images EMPTY, so it doesn't inherit the cottage roofline
-that the rest of the set shares.
+Generate with Reference images EMPTY — see the note above; a reference would push
+this back toward the cottage roofline the rest of the set shares.
 
 ```
 2:1 isometric game sprite, orthographic dimetric projection viewed from the upper front left at 30 degrees above the horizon, no perspective convergence. Key light from the upper left, soft ambient occlusion on the structure itself. The object floats in empty space: no ground, no floor, no terrain, no cast shadow. Weathered post-apocalyptic survivor architecture: stained bone-khaki concrete, corrugated metal, scavenged timber bracing, patched sandbags, olive-grey shadows (#626762). Muted desaturated palette, clean hand-painted stylised game art, crisp readable silhouette, moderate detail. Centred and complete within frame with clear margin on all sides. No text, no letters, no signage, no people, no UI elements. Plain flat solid magenta background (#FF00FF), completely uniform and empty — the magenta appears only behind the object, never on it.
