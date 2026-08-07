@@ -19,6 +19,13 @@
 
 $PLAYERS = (int)($argv[1] ?? 100);
 $HOURS   = (int)($argv[2] ?? 100);
+// Minutes between waves. The loop steps exactly one raid cycle, so widening the
+// step models a slower cadence precisely -- production accrues for the whole gap
+// and one wave resolves at the end of it. That lets a candidate cadence be tested
+// without editing the live constants.
+$WAVE_MIN = 0.0;
+// Multiplier on emplacement cost, for testing whether guns are simply unaffordable.
+$GUN_COST = (float)($argv[4] ?? 1.0); $GLOBALS['GUN_COST'] = $GUN_COST;
 
 $db = new mysqli('127.0.0.1', 'root', '', 'zv2', 3306);
 if ($db->connect_errno) { fwrite(STDERR, "db: {$db->connect_error}\n"); exit(1); }
@@ -26,6 +33,8 @@ $GLOBALS['db'] = $db;
 function json_err($a, $b, $c = 400) { fwrite(STDERR, "$a: $b\n"); exit(1); }
 function pipe_nums($s) { return array_map('floatval', explode('|', (string)$s)); }
 require __DIR__ . '/../api/mechanics.php';
+if ($WAVE_MIN <= 0) $WAVE_MIN = ZV2_CYCLE_SECONDS * 3 / 60;
+if (isset($argv[3])) $WAVE_MIN = (float)$argv[3];
 
 // --- scratch database ---------------------------------------------------------
 // Clone every table rather than the handful I expect to be touched: the rules
@@ -65,7 +74,10 @@ function cost_of(int $type, int $level): ?array {
     global $db;
     $r = $db->query("SELECT water,food,wood,metal,petrol FROM zv2.facility_costs
                       WHERE facility_id=$type AND level=$level LIMIT 1");
-    return $r && $r->num_rows ? array_map('intval', array_values($r->fetch_assoc())) : null;
+    if (!$r || !$r->num_rows) return null;
+    $c = array_map('intval', array_values($r->fetch_assoc()));
+    if (in_array($type, ZV2_EMPLACEMENT_TYPES, true)) $c = array_map(fn($v) => (int)ceil($v * $GLOBALS['GUN_COST']), $c);
+    return $c;
 }
 
 /** Free cell for a gun: on a lane if one is known, so a bot is not simply unlucky. */
@@ -76,14 +88,21 @@ function pick_cell(int $uid, array $lanePreference): ?array {
         $q = $db->query("SELECT grid_x,grid_y FROM $t WHERE userid=$uid");
         while ($q && ($r = $q->fetch_assoc())) $taken["{$r['grid_x']}|{$r['grid_y']}"] = true;
     }
-    foreach ($lanePreference as [$lx, $ly]) {
-        foreach ([[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]] as [$dx,$dy]) {
-            $x = $lx + $dx; $y = $ly + $dy;
-            if ($x < 1 || $y < 1 || $x >= ZV2_GRID_W - 1 || $y >= ZV2_GRID_H - 1) continue;
-            if (!isset($taken["$x|$y"])) return [$x, $y];
+    // Scan the whole interior and take the free cell nearest the preferred point.
+    // An earlier version only tried the six neighbours of one cell, so once those
+    // filled it returned null forever and every bot stalled at about five guns --
+    // which read as "the economy cannot afford guns" when it was the harness
+    // refusing to place them. Cheap enough at 256 cells to do properly.
+    [$px, $py] = $lanePreference[0];
+    $best = null; $bestD = PHP_INT_MAX;
+    for ($y = 1; $y < ZV2_GRID_H - 1; $y++) {
+        for ($x = 1; $x < ZV2_GRID_W - 1; $x++) {
+            if (isset($taken["$x|$y"])) continue;
+            $d = ($x - $px) ** 2 + ($y - $py) ** 2;
+            if ($d < $bestD) { $bestD = $d; $best = [$x, $y]; }
         }
     }
-    return null;
+    return $best;
 }
 
 // --- seed ---------------------------------------------------------------------
@@ -109,14 +128,14 @@ for ($i = 0; $i < $PLAYERS; $i++) {
                   'clean' => 0, 'leaked' => 0, 'waves' => 0, 'starved' => 0, 'lanes' => null];
 }
 
-$steps = (int)floor($HOURS * 3600 / (ZV2_CYCLE_SECONDS * 3));
-fwrite(STDERR, sprintf("%d players x %d h = %d waves each (%d total)\n",
-       $PLAYERS, $HOURS, $steps, $PLAYERS * $steps));
+$steps = (int)floor($HOURS * 60 / $WAVE_MIN);
+fwrite(STDERR, sprintf("%d players x %d h, wave every %.0f min, gun cost x%.2f = %d waves each\n",
+       $PLAYERS, $HOURS, $WAVE_MIN, $GUN_COST, $steps));
 
 // --- run ----------------------------------------------------------------------
 $t0 = microtime(true);
 for ($step = 1; $step <= $steps; $step++) {
-    $cycle = ZV2_CYCLE_SECONDS * 3;
+    $cycle = (int)round($WAVE_MIN * 60);
     foreach ($players as &$p) {
         $uid = $p['uid'];
         $now = time();
