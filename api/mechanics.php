@@ -249,10 +249,15 @@ function zv2_emplacements(int $uid): array {
  */
 function zv2_ensure_wall(int $uid): void {
     global $db;
-    $r = $db->query("SELECT COUNT(*) c FROM compound_structures WHERE userid=$uid AND kind='wall'");
-    if ($r && (int)($r->fetch_assoc()['c'] ?? 0) > 0) return;
-
     $w = ZV2_GRID_W; $h = ZV2_GRID_H;
+    $ringSize = 2 * $w + 2 * ($h - 2);
+    // Count what stands on the ring rather than whether any wall exists: removing
+    // the second main-gate cell left a cell that was neither wall nor gateway, and
+    // an unguarded hole in a perimeter defeats the entire point of having one.
+    $r = $db->query("SELECT COUNT(*) c FROM compound_structures
+                      WHERE userid=$uid AND (grid_x=0 OR grid_y=0 OR grid_x=" . ($w - 1) . " OR grid_y=" . ($h - 1) . ")");
+    if ($r && (int)($r->fetch_assoc()['c'] ?? 0) >= $ringSize) return;
+
     $ring = [];
     for ($x = 0; $x < $w; $x++) { $ring[] = [$x, 0]; $ring[] = [$x, $h - 1]; }
     for ($y = 1; $y < $h - 1; $y++) { $ring[] = [0, $y]; $ring[] = [$w - 1, $y]; }
