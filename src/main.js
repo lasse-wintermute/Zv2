@@ -815,11 +815,15 @@ async function onClick(e) {
   if (mode === 'world') return onWorldClick(x, y);
 
   const hit = view.pick(x, y);
-  if (!hit) { view.setSelected(null); view.setSelectedCell(null); panel.hide(); requestRender(); return; }
+  if (!hit) { view.setSelected(null); view.setSelectedEmplacement(null); view.setSelectedCell(null); panel.hide(); requestRender(); return; }
   if (hit.empty) {
     await openBuildMenu(hit, e.clientX, e.clientY);   // SOTD-style menu at the plot
     return;
   }
+  // Guns are not facilities. Left-click and right-click are separate paths here,
+  // and routing a gun down the facility one looked up slot 41 as a building --
+  // which is why the tooltip read level 1 while the popup said level 0.
+  if (hit.emplacementId) { openEmplacementMenu(hit, e.clientX, e.clientY); return; }
   await openFacilityMenu(hit.slot, e.clientX, e.clientY);   // context-menu style, like the build menu
 }
 

@@ -71,25 +71,25 @@ ANCHOR_OVERRIDES = {"staff_area": 0.82}
 # lit-window size and equalising it; the ones marked "judged" have too few real windows
 # to measure (a bunker, a warehouse, a scrap yard) and are set from what the building
 # is instead. Re-derive with the measurement in the commit that introduced this table.
+# Sprites regenerated with the scale anchor (drum in frame + stated metres) come out
+# in proportion and sit at 1.0 -- their old corrections were calibrated against
+# broken art and would now push them back out of true.
 SCALE_OVERRIDES = {
     "headquarters":    1.45,   # five storeys; still towers, now at honest window scale
-    "storage":         1.15,   # judged -- warehouse, few windows to measure
     "medical_center":  1.15,
-    "power_generator": 0.80,   # judged -- measure caught rust and the chimney band, not
-                               # glass. Interim only: its louvre and pipework are oversized
-                               # against its OWN walls, which no scale value can correct.
-                               # It is first on the rebuild list for that reason.
     "staff_area":      1.07,
     "troop_quarters":  1.05,   # judged -- long barracks, no lit glass detected
     "garage":          1.03,
+    "power_generator": 1.00,   # rebuilt with the anchor
+    "storage":         1.00,   # rebuilt with the anchor
+    "comm_center":     1.00,   # rebuilt with the anchor
+    "radio_tower":     1.00,   # rebuilt with the anchor
     "life_support":    1.00,
     "fortifications":  1.00,   # judged -- bunker; the measure caught rust, not glass
     "scrapyard":       1.00,   # judged -- forge glow skews the measure
     "research_center": 0.94,
     "toolshop":        0.92,
-    "comm_center":     0.85,   # judged -- single-storey hut, one window band
-    "radio_tower":     0.82,
-    "chem_lab":        0.78,
+    "chem_lab":        0.78,   # last of the rebuild list, still on the old generation
 }
 
 

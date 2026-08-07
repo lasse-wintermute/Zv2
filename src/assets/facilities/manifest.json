@@ -4,8 +4,8 @@
     "scale": 0.78
   },
   "comm_center": {
-    "anchor": 0.9967,
-    "scale": 0.85
+    "anchor": 0.9965,
+    "scale": 1.0
   },
   "fortifications": {
     "anchor": 1.0,
@@ -28,12 +28,12 @@
     "scale": 1.15
   },
   "power_generator": {
-    "anchor": 0.9974,
-    "scale": 0.8
+    "anchor": 0.9964,
+    "scale": 1.0
   },
   "radio_tower": {
-    "anchor": 0.9661,
-    "scale": 0.82
+    "anchor": 0.9974,
+    "scale": 1.0
   },
   "research_center": {
     "anchor": 0.9948,
@@ -48,8 +48,8 @@
     "scale": 1.07
   },
   "storage": {
-    "anchor": 0.9961,
-    "scale": 1.15
+    "anchor": 0.9958,
+    "scale": 1.0
   },
   "toolshop": {
     "anchor": 1.0,
