@@ -1,62 +1,62 @@
 {
   "chem_lab": {
     "anchor": 1.0,
-    "scale": 1
+    "scale": 0.78
   },
   "comm_center": {
     "anchor": 0.9967,
-    "scale": 1
+    "scale": 0.85
   },
   "fortifications": {
     "anchor": 1.0,
-    "scale": 1
+    "scale": 1.0
   },
   "garage": {
     "anchor": 1.0,
-    "scale": 1
+    "scale": 1.03
   },
   "headquarters": {
     "anchor": 0.9974,
-    "scale": 1.7
+    "scale": 1.45
   },
   "life_support": {
     "anchor": 1.0,
-    "scale": 1
+    "scale": 1.0
   },
   "medical_center": {
     "anchor": 0.9959,
-    "scale": 1
+    "scale": 1.15
   },
   "power_generator": {
     "anchor": 0.9974,
-    "scale": 1
+    "scale": 1.15
   },
   "radio_tower": {
     "anchor": 0.9661,
-    "scale": 1
+    "scale": 0.82
   },
   "research_center": {
     "anchor": 0.9948,
-    "scale": 1
+    "scale": 0.94
   },
   "scrapyard": {
     "anchor": 0.9941,
-    "scale": 1
+    "scale": 1.0
   },
   "staff_area": {
     "anchor": 0.82,
-    "scale": 1
+    "scale": 1.07
   },
   "storage": {
     "anchor": 0.9961,
-    "scale": 1
+    "scale": 1.15
   },
   "toolshop": {
     "anchor": 1.0,
-    "scale": 1
+    "scale": 0.92
   },
   "troop_quarters": {
     "anchor": 0.9008,
-    "scale": 1
+    "scale": 1.05
   }
 }

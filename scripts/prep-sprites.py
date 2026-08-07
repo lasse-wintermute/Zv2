@@ -59,10 +59,35 @@ SENTINELS = [(255, 0, 255), (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0)
 # over the tile in front, which is what a porch should do anyway.
 ANCHOR_OVERRIDES = {"staff_area": 0.82}
 
-# Draw scale relative to one tile. The headquarters is the seat of the compound and
-# reads as just another shed at parity, so it is given room to tower over its
-# neighbours. This is presentation only -- it still occupies a single grid cell.
-SCALE_OVERRIDES = {"headquarters": 1.7}
+# Draw scale relative to one tile, presentation only -- every facility still occupies
+# a single grid cell.
+#
+# Each sprite was generated independently, so the model chose its own camera distance
+# for each one. Drawing them all at one tile width then puts a shack and a warehouse
+# at the same size, which reads as wildly inconsistent architecture: window and door
+# sizes are the giveaway, since those are the human-scale reference in the artwork.
+#
+# These values normalise on that reference. Most are derived from measuring on-screen
+# lit-window size and equalising it; the ones marked "judged" have too few real windows
+# to measure (a bunker, a warehouse, a scrap yard) and are set from what the building
+# is instead. Re-derive with the measurement in the commit that introduced this table.
+SCALE_OVERRIDES = {
+    "headquarters":    1.45,   # five storeys; still towers, now at honest window scale
+    "storage":         1.15,   # judged -- warehouse, few windows to measure
+    "medical_center":  1.15,
+    "power_generator": 1.15,
+    "staff_area":      1.07,
+    "troop_quarters":  1.05,   # judged -- long barracks, no lit glass detected
+    "garage":          1.03,
+    "life_support":    1.00,
+    "fortifications":  1.00,   # judged -- bunker; the measure caught rust, not glass
+    "scrapyard":       1.00,   # judged -- forge glow skews the measure
+    "research_center": 0.94,
+    "toolshop":        0.92,
+    "comm_center":     0.85,   # judged -- single-storey hut, one window band
+    "radio_tower":     0.82,
+    "chem_lab":        0.78,
+}
 
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
