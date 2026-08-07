@@ -99,25 +99,37 @@ DRUM_PX = {}              # key -> measured px; populated as sprites are measure
 
 
 def measure_drum(alpha, corner=0.34):
-    """Height in pixels of the isolated object in the bottom-left corner.
+    """Find the isolated reference drum in the bottom-left corner.
 
-    Returns None when nothing separable is there, so an unmeasured sprite falls
-    back to its override rather than being scaled by a bad reading.
+    Returns (height_px, mask) or (None, None) when nothing separable is there, so
+    an unmeasured sprite falls back to its override rather than being scaled by a
+    bad reading.
+
+    The drum is scaffolding, not scenery: it exists so the model has something to
+    size the architecture against and so this script has something to measure. It
+    gets erased before the sprite is written, which is why it does not matter how
+    large the model chooses to draw it -- a pixel budget is not something a
+    diffusion model can be given, but a deletion is absolute.
     """
     mask = np.asarray(alpha, dtype=np.int16) > 128
     h, w = mask.shape
-    box = mask[int(h * (1 - corner)):, :int(w * corner)]
+    y0, x1 = int(h * (1 - corner)), int(w * corner)
+    box = mask[y0:, :x1]
     if not box.any():
-        return None
+        return None, None
     labels, count = ndimage.label(box)
     if not count:
-        return None
+        return None, None
     sizes = ndimage.sum(box, labels, range(1, count + 1))
     best = int(np.argmax(sizes)) + 1
     rows = np.flatnonzero((labels == best).any(axis=1))
     height = rows.max() - rows.min() + 1
-    # A drum is a small upright object. Anything filling the corner is the building.
-    return float(height) if height < h * 0.3 else None
+    # Anything filling the corner is the building itself, not a drum beside it.
+    if height >= h * 0.45:
+        return None, None
+    full = np.zeros_like(mask)
+    full[y0:, :x1] = (labels == best)
+    return float(height), full
 
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
@@ -285,6 +297,21 @@ def process(path, out_dir, key, size, opts, dry_run):
 
     img, tainted = neutralise(img, alpha, opts.hue_tol, opts.sat_floor,
                               opts.neutralise_above, opts.darken)
+
+    # Measure the reference drum, then erase it. It is a ruler, not part of the
+    # building, and leaving it in put an oversized barrel beside every facility.
+    # Opt-in, and deliberately so. The detector takes the largest separable object
+    # in the bottom-left corner, which is only the drum when the art was generated
+    # with it isolated there. Run against sprites drawn with the drum against the
+    # building and it seizes a chunk of the building instead -- measured at 108,
+    # 190 and 209 px on this set -- then erases it. Off by default until the art
+    # is generated to suit.
+    drum, drum_mask = measure_drum(alpha) if opts.use_drum else (None, None)
+    if drum_mask is not None:
+        a = np.asarray(alpha).copy()
+        a[drum_mask] = 0
+        alpha = Image.fromarray(a, "L")
+
     out = img.convert("RGBA")
     out.putalpha(alpha)
 
@@ -310,9 +337,15 @@ def process(path, out_dir, key, size, opts, dry_run):
     anchor = ANCHOR_OVERRIDES.get(key, footprint_anchor(out.getchannel("A"), opts.footprint))
     # A measured drum outranks a hand-set scale: it is the same physical object in
     # every image, so matching its height is what makes the buildings agree.
-    drum = DRUM_PX.get(key)
-    if drum:
-        scale = round(TARGET_DRUM_PX / drum * (size / max(out.size)), 3)
+    # A drum measured in this image outranks any hand-set scale: it is the same
+    # physical object in every sprite, so matching its height is what makes the
+    # buildings agree. DRUM_PX exists only to pin a value by hand if one is ever
+    # needed. Scale is expressed against the trimmed sprite, since that is what
+    # the renderer draws at one tile wide.
+    measured = drum if drum else DRUM_PX.get(key)
+    if measured:
+        scale = round(TARGET_DRUM_PX / (measured * (size / max(img.size))), 3)
+        scale = max(0.4, min(2.5, scale))
     else:
         scale = SCALE_OVERRIDES.get(key, 1)
     size_kb = os.path.getsize(dest) / 1024 if os.path.exists(dest) else 0
@@ -337,6 +370,10 @@ def main():
     ap.add_argument("--min-area", type=float, default=0.0004,
                     help="enclosed regions at least this fraction of the frame count as background")
     ap.add_argument("--erode", type=int, default=1, help="pixels of edge erosion; raise to kill a halo")
+    ap.add_argument("--use-drum", action="store_true",
+                    help="measure the corner reference drum, scale by it and erase it. "
+                         "Only for art generated with the drum ISOLATED in the bottom-left "
+                         "corner -- otherwise it grabs part of the building")
     ap.add_argument("--hue-tol", type=int, default=14,
                     help="hue tolerance on a 0-255 wheel (14 is about 20 degrees); pink backdrop "
                          "sits near 235, rust-red roofs near 8, so there is wide separation")
