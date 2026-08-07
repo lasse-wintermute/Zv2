@@ -1016,6 +1016,26 @@ export const translations = {
     'a long way': 'ein weiter Weg',
     'Try pharmacies, stores and abandoned supply rooms. Someone in this city must still have': 'Versuch es in Apotheken, Läden und verlassenen Vorratsräumen. Irgendjemand in dieser Stadt hat bestimmt noch',
 
+    // The survivor's demand in src/recruit.js is built around the item name, so each
+    // line is split into the fragment before and the fragment after it. The German
+    // keeps the item in the same slot as the English, which is what lets the pair of
+    // fragments reassemble into a correct sentence. A trailing fragment must start at
+    // its first word, not at the punctuation that follows the item: the item name ends
+    // in a letter, and the matcher's letter boundary would reject the key.
+    'I am not leaving without': 'Ich gehe hier nicht weg ohne',
+    'Bring me some and I will join you.': 'Bring mir welche, dann schließe ich mich dir an.',
+    'I can fight, but not with an empty weapon. Bring me': 'Ich kann kämpfen, aber nicht mit einer leeren Waffe. Bring mir',
+    'and we have a deal.': 'und wir sind im Geschäft.',
+    'I have unfinished business before I leave. One': 'Ich habe noch etwas zu erledigen, bevor ich gehe. Ein',
+    'will settle it.': 'regelt das.',
+    'I need': 'Ich brauche',
+    'from the ruins. Find it, and my skills are yours.': 'aus den Ruinen. Finde es, und meine Fähigkeiten gehören dir.',
+    'Supplies first. Bring me': 'Vorräte zuerst. Bring mir',
+    'and I will come back to your stronghold.': 'und ich komme mit zu deinem Stützpunkt.',
+    'WANTS:': 'BRAUCHT:',
+    'squad carries': 'Trupp trägt',
+    'Give': 'Gib',
+
     // ---------------------------------------------------------------- identity & alliance
     'SETTLEMENT IDENTITY': 'IDENTITÄT DER SIEDLUNG',
     'Stronghold name': 'Name des Stützpunkts',
