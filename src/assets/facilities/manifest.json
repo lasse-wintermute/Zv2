@@ -3,6 +3,10 @@
     "anchor": 1.0,
     "scale": 1
   },
+  "comm_center": {
+    "anchor": 0.9967,
+    "scale": 1
+  },
   "fortifications": {
     "anchor": 1.0,
     "scale": 1
@@ -12,7 +16,7 @@
     "scale": 1
   },
   "headquarters": {
-    "anchor": 1.0,
+    "anchor": 0.9974,
     "scale": 1.7
   },
   "life_support": {
