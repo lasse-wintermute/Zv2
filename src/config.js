@@ -99,7 +99,21 @@ const _FAC = [
   [38,'water_purifier','prod','Water purifier','Wasseraufbereitung'],
   [39,'hydroponic_plant','prod','Hydroponic plant','Hydrokulturanlage'],
   [40,'wind_generator','power','Wind generator','Windgenerator'],
+  // Defensive emplacements. Ids continue past the ported catalogue so they cannot
+  // collide with it; these are the pieces the tower-defence layout is built from.
+  [41,'sniper_nest','mil','Sniper nest','Scharfschützennest'],
+  [42,'mg_tower','mil','Machine gun tower','MG-Turm'],
+  [43,'barricade','mil','Barricade','Barrikade'],
 ];
+
+// Emplacement reach in tiles, mirroring ZV2_DEFENSE_STATS in api/mechanics.php.
+// Used to draw the coverage ring so a player can see what a gun actually holds
+// before committing the resources.
+export const FAC_RANGE = { 41: 5.5, 42: 2.5, 43: 1.2, 8: 1.8, 24: 4.0 };
+export const facRange = (type, level = 1) => {
+  const base = FAC_RANGE[type];
+  return base ? base + (Math.max(1, level) - 1) * 0.4 : 0;
+};
 export const FAC = {};
 for (const [type, key, cat, name, de] of _FAC) FAC[type] = { type, key, cat, name, de };
 

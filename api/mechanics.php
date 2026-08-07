@@ -1,8 +1,28 @@
 <?php
 // Authoritative standalone rules for stronghold time, staffing, combat supplies and raids.
 
-const ZV2_CYCLE_SECONDS = 1200; // ten minutes daylight, ten minutes night
-const ZV2_DAY_SECONDS = 600;
+// Day/night runs ten times faster than the old twenty-minute cycle: waves land at
+// nightfall, and at the old pace a defensive layout could not be tried out in a
+// sitting. One minute of daylight to build, one minute of night to survive.
+const ZV2_CYCLE_SECONDS = 120;
+const ZV2_DAY_SECONDS = 60;
+
+// The compound is a 16x16 walled settlement (~5x the old 7x7 yard). Big enough for
+// ten pre-built houses, the facility set and room to lay out fire lanes; small
+// enough that a wave simulation stays cheap and the map stays readable.
+const ZV2_GRID_W = 16;
+const ZV2_GRID_H = 16;
+
+// Defensive emplacements: [range in tiles, damage per simulation step].
+// Range is what makes placement matter -- a tower only fires at lane cells it
+// actually covers, so a sniper nest tucked behind the houses contributes nothing.
+const ZV2_DEFENSE_STATS = [
+    41 => ['range' => 5.5, 'dps' => 9,  'label' => 'sniper nest'],
+    42 => ['range' => 2.5, 'dps' => 26, 'label' => 'machine gun tower'],
+    43 => ['range' => 1.2, 'dps' => 0,  'label' => 'barricade', 'slow' => 2],
+    8  => ['range' => 1.8, 'dps' => 5,  'label' => 'fortifications'],
+    24 => ['range' => 4.0, 'dps' => 4,  'label' => 'lookout'],
+];
 
 function zv2_active_builds(int $uid): array {
     global $db;$out=[];$r=$db->query('SELECT slot,due,to_level FROM builds WHERE userid='.$uid);
@@ -103,6 +123,134 @@ function zv2_world_clock(array $s):array{
     return['phase'=>$phase,'day'=>$day,'nextPhaseAt'=>$next,'secondsToPhase'=>$next-$now,'raidCycle'=>$raidCycle,'nextRaidAt'=>$nextRaidAt,'raidAtNextPhase'=>$phase==='day'&&abs($nextRaidAt-$next)<=1];
 }
 
+/** Deterministic per-user PRNG, so a compound looks the same on every load. */
+function zv2_seeded(int $seed): callable {
+    $state = ($seed * 1103515245 + 12345) & 0x7fffffff;
+    return function (int $n) use (&$state): int {
+        $state = ($state * 1103515245 + 12345) & 0x7fffffff;
+        return $n > 0 ? $state % $n : 0;
+    };
+}
+
+/**
+ * Lay out the walled settlement the first time it is needed: one main gate on the
+ * south wall, three smaller gates on the other sides, and ten pre-built houses.
+ *
+ * Runs lazily rather than as a migration step so existing saves pick it up on
+ * their next load. Facilities laid out on the old 7x7 grid are recentred at the
+ * same time -- left alone they would all sit in one corner of the new map.
+ */
+function zv2_ensure_compound(int $uid): void {
+    global $db;
+    $r = $db->query("SELECT COUNT(*) c FROM compound_structures WHERE userid=$uid");
+    if ($r && (int)($r->fetch_assoc()['c'] ?? 0) > 0) return;
+
+    $shift = intdiv(ZV2_GRID_W - 7, 2);
+    $db->query("UPDATE facility_positions SET grid_x=grid_x+$shift, grid_y=grid_y+$shift
+                WHERE userid=$uid AND grid_x<7 AND grid_y<7");
+
+    $w = ZV2_GRID_W; $h = ZV2_GRID_H; $mid = intdiv($w, 2);
+    $rows = [];
+    // Main gate is two cells wide on the south wall -- the side facing the camera.
+    $rows[] = [$mid - 1, $h - 1, 'gate_main', 's'];
+    $rows[] = [$mid,     $h - 1, 'gate_main', 's'];
+    $rows[] = [$mid,     0,      'gate_side', 'n'];
+    $rows[] = [0,        $mid,   'gate_side', 'w'];
+    $rows[] = [$w - 1,   $mid,   'gate_side', 'e'];
+
+    $taken = [];
+    foreach ($rows as $g) $taken["{$g[0]}|{$g[1]}"] = true;
+    $q = $db->query("SELECT grid_x,grid_y FROM facility_positions WHERE userid=$uid");
+    while ($q && ($f = $q->fetch_assoc())) $taken["{$f['grid_x']}|{$f['grid_y']}"] = true;
+
+    // Houses sit in the interior in loose terraces, never touching each other, so
+    // the gaps between them read as streets and become the lanes walkers follow.
+    $rand = zv2_seeded($uid * 7919 + 13);
+    $cells = [];
+    for ($y = 2; $y <= $h - 3; $y++) for ($x = 2; $x <= $w - 3; $x++) $cells[] = [$x, $y];
+    for ($i = count($cells) - 1; $i > 0; $i--) { $j = $rand($i + 1); [$cells[$i], $cells[$j]] = [$cells[$j], $cells[$i]]; }
+
+    $core = [intdiv($w, 2), intdiv($h, 2)];
+    $houses = 0;
+    foreach ($cells as [$x, $y]) {
+        if ($houses >= 10) break;
+        if (isset($taken["$x|$y"])) continue;
+        if (abs($x - $core[0]) <= 1 && abs($y - $core[1]) <= 1) continue;   // keep the core clear
+        $touching = false;
+        for ($dy = -1; $dy <= 1 && !$touching; $dy++)
+            for ($dx = -1; $dx <= 1; $dx++)
+                if (isset($taken["" . ($x + $dx) . "|" . ($y + $dy)])) { $touching = true; break; }
+        if ($touching) continue;
+        $taken["$x|$y"] = true;
+        $rows[] = [$x, $y, 'house', '', $rand(4)];
+        $houses++;
+    }
+
+    foreach ($rows as $row) {
+        [$x, $y, $kind, $facing] = [$row[0], $row[1], $row[2], $row[3]];
+        $variant = (int)($row[4] ?? 0);
+        $hp = $kind === 'house' ? 140 : ($kind === 'gate_main' ? 300 : 200);
+        $db->query("INSERT IGNORE INTO compound_structures(userid,kind,grid_x,grid_y,facing,hp,max_hp,variant)
+                    VALUES($uid,'$kind',$x,$y,'$facing',$hp,$hp,$variant)");
+    }
+}
+
+/** Every structure in the compound, as the client and the wave sim both need it. */
+function zv2_structures(int $uid): array {
+    global $db; zv2_ensure_compound($uid);
+    $out = [];
+    $r = $db->query("SELECT kind,grid_x,grid_y,facing,hp,max_hp,variant FROM compound_structures WHERE userid=$uid");
+    while ($r && ($s = $r->fetch_assoc())) $out[] = [
+        'kind' => $s['kind'], 'gridX' => (int)$s['grid_x'], 'gridY' => (int)$s['grid_y'],
+        'facing' => $s['facing'], 'hp' => (int)$s['hp'], 'maxHp' => (int)$s['max_hp'],
+        'variant' => (int)$s['variant'],
+    ];
+    return $out;
+}
+
+/**
+ * Shortest walkable path from each gate to the core, avoiding houses and
+ * facilities. This is the lane the wave follows, and it is why where you put a
+ * building matters: block a street and the walkers are pushed onto another one,
+ * hopefully the one covered by your guns.
+ */
+function zv2_wave_lanes(int $uid, array $structures, array $facilities): array {
+    $w = ZV2_GRID_W; $h = ZV2_GRID_H;
+    $blocked = [];
+    foreach ($structures as $s) if ($s['kind'] === 'house') $blocked["{$s['gridX']}|{$s['gridY']}"] = true;
+    foreach ($facilities as $f) $blocked["{$f['gridX']}|{$f['gridY']}"] = true;
+
+    // Head for the headquarters when it is placed, otherwise the middle of the map.
+    $core = [intdiv($w, 2), intdiv($h, 2)];
+    foreach ($facilities as $f) if ((int)$f['slot'] === 17) $core = [$f['gridX'], $f['gridY']];
+    unset($blocked["{$core[0]}|{$core[1]}"]);
+
+    $lanes = [];
+    foreach ($structures as $s) {
+        if (strpos($s['kind'], 'gate') !== 0) continue;
+        $start = [$s['gridX'], $s['gridY']];
+        $prev = []; $seen = ["{$start[0]}|{$start[1]}" => true]; $queue = [$start]; $found = false;
+        while ($queue) {
+            $cur = array_shift($queue);
+            if ($cur[0] === $core[0] && $cur[1] === $core[1]) { $found = true; break; }
+            foreach ([[1,0],[-1,0],[0,1],[0,-1]] as [$dx, $dy]) {
+                $nx = $cur[0] + $dx; $ny = $cur[1] + $dy; $k = "$nx|$ny";
+                if ($nx < 0 || $ny < 0 || $nx >= $w || $ny >= $h) continue;
+                if (isset($seen[$k]) || isset($blocked[$k])) continue;
+                $seen[$k] = true; $prev[$k] = $cur; $queue[] = [$nx, $ny];
+            }
+        }
+        if (!$found) continue;                       // fully walled off: no lane from this gate
+        $path = []; $cur = $core;
+        while (!($cur[0] === $start[0] && $cur[1] === $start[1])) {
+            $path[] = $cur; $cur = $prev["{$cur[0]}|{$cur[1]}"] ?? $start;
+        }
+        $path[] = $start;
+        $lanes[] = ['gate' => $s, 'path' => array_reverse($path)];
+    }
+    return $lanes;
+}
+
 function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):array{
     // The nightly zombie horde. Pressure builds over the first ~12 days, then
     // plateaus so an aging world stays survivable. OG-faithful consequences:
@@ -111,7 +259,12 @@ function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):ar
     // capped at 20% of the store (original stronghold theft was players-only).
     // 6-day grace: scattered infected only (threat 5–10) while the compound is
     // young; real pressure ramps afterwards and plateaus around 29–34.
-    global $db;$threat=5+min(12,max(0,$day-6))*2+(($uid*17+$day*13)%6);$defense=(int)$effects['defense'];$breach=max(0,$threat-$defense);$loss=0;$wounded=null;$damage=0;
+    global $db;$threat=5+min(12,max(0,$day-6))*2+(($uid*17+$day*13)%6);
+    $wave=zv2_simulate_wave($uid,$day,$threat,$effects);
+    // Staffed defenders still count, but they now backstop the guns rather than
+    // being the whole story: what reaches the core is what the towers let through.
+    $defense=(int)$effects['defense']+$wave['killed'];
+    $breach=max(0,$wave['leaked']*2-(int)$effects['defense']);$loss=0;$wounded=null;$damage=0;
     if($breach>0){
         $loss=min($breach*2,(int)floor((float)($resources[1]??0)*.2));$resources[1]=max(0,(float)($resources[1]??0)-$loss);
         $victims=1+(int)floor($breach/12);
@@ -119,7 +272,105 @@ function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):ar
         while($q&&($sv=$q->fetch_assoc())){$vid=(int)$sv['id'];$hit=min((int)$sv['hp'],max(1,(int)ceil($breach/2)));if($wounded===null){$wounded=$vid;$damage=$hit;}$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$hit),fatigue=LEAST(100,fatigue+10) WHERE id=$vid");}
     }
     $success=$breach===0?1:0;$wid=$wounded===null?'NULL':(string)$wounded;$now=time();$db->query("INSERT INTO raids(userid,day_number,threat,defense,success,resource_loss,wounded_survivor,damage,created_at) VALUES($uid,$day,$threat,$defense,$success,$loss,$wid,$damage,$now) ON DUPLICATE KEY UPDATE threat=VALUES(threat),defense=VALUES(defense),success=VALUES(success),resource_loss=VALUES(resource_loss),wounded_survivor=VALUES(wounded_survivor),damage=VALUES(damage),created_at=VALUES(created_at)");
-    return['day'=>$day,'threat'=>$threat,'defense'=>$defense,'success'=>(bool)$success,'resourceLoss'=>$loss,'woundedSurvivor'=>$wounded,'damage'=>$damage];
+    return['day'=>$day,'threat'=>$threat,'defense'=>$defense,'success'=>(bool)$success,'resourceLoss'=>$loss,'woundedSurvivor'=>$wounded,'damage'=>$damage,'wave'=>$wave];
+}
+
+/**
+ * Walk a wave from the gates to the core and let the emplacements fire on it.
+ *
+ * Deterministic and server-side: the client replays the returned log rather than
+ * running its own combat, so a wave cannot be re-rolled by reloading and the
+ * outcome is the same whoever asks. Placement decides it -- a tower contributes
+ * only while a walker is inside its range, so guns covering a dead street kill
+ * nothing while the lane past them runs straight to the headquarters.
+ */
+function zv2_simulate_wave(int $uid, int $day, int $threat, array $effects): array {
+    global $db;
+    $structures = zv2_structures($uid);
+
+    $levels = [];
+    $r = $db->query("SELECT buildings FROM strongholds WHERE userid=$uid LIMIT 1");
+    if ($r && $r->num_rows) foreach (explode('|', (string)$r->fetch_assoc()['buildings']) as $i => $v) $levels[$i + 1] = (int)$v;
+
+    $facilities = []; $towers = [];
+    $q = $db->query("SELECT slot,grid_x,grid_y FROM facility_positions WHERE userid=$uid");
+    while ($q && ($f = $q->fetch_assoc())) {
+        $slot = (int)$f['slot'];
+        $entry = ['slot' => $slot, 'gridX' => (int)$f['grid_x'], 'gridY' => (int)$f['grid_y']];
+        $facilities[] = $entry;
+        if (isset(ZV2_DEFENSE_STATS[$slot])) {
+            $stat = ZV2_DEFENSE_STATS[$slot];
+            $lvl = max(1, $levels[$slot] ?? 1);
+            $towers[] = $entry + [
+                'range' => $stat['range'] + ($lvl - 1) * 0.4,
+                'dps'   => $stat['dps'] * $lvl,
+                'slow'  => $stat['slow'] ?? 0,
+                'label' => $stat['label'],
+                'kills' => 0,
+            ];
+        }
+    }
+
+    $lanes = zv2_wave_lanes($uid, $structures, $facilities);
+    if (!$lanes) return ['spawned' => 0, 'killed' => 0, 'leaked' => 0, 'lanes' => [], 'towers' => [], 'sealed' => true];
+
+    // Wave size tracks the same pressure curve the old raid used, so the ramp a
+    // player already knows is unchanged -- only how it is resisted has changed.
+    $total = max(4, (int)round($threat * 1.6));
+    $rand = zv2_seeded($uid * 31 + $day * 7);
+    $zombies = [];
+    foreach ($lanes as $i => $lane) {
+        $share = $lane['gate']['kind'] === 'gate_main' ? 0.45 : 0.55 / max(1, count($lanes) - 1);
+        $n = max(1, (int)round($total * $share));
+        for ($z = 0; $z < $n; $z++) $zombies[] = [
+            'lane' => $i, 'step' => -$z, 'hp' => 8 + $day, 'stall' => 0, 'alive' => true,
+        ];
+    }
+
+    $killed = 0; $leaked = 0; $log = [];
+    $maxSteps = 0; foreach ($lanes as $l) $maxSteps = max($maxSteps, count($l['path']));
+    $maxSteps += count($zombies) + 4;
+
+    for ($step = 0; $step < $maxSteps; $step++) {
+        $any = false;
+        foreach ($zombies as &$z) {
+            if (!$z['alive']) continue;
+            $any = true;
+            if ($z['stall'] > 0) { $z['stall']--; continue; }
+            $z['step']++;
+            $path = $lanes[$z['lane']]['path'];
+            if ($z['step'] >= count($path)) { $z['alive'] = false; $leaked++; }
+        }
+        unset($z);
+        if (!$any) break;
+
+        foreach ($towers as &$t) {
+            $budget = $t['dps'];
+            foreach ($zombies as &$z) {
+                if (!$z['alive'] || $z['step'] < 0 || $budget <= 0) continue;
+                $path = $lanes[$z['lane']]['path'];
+                $cell = $path[min($z['step'], count($path) - 1)];
+                $dist = sqrt(($cell[0] - $t['gridX']) ** 2 + ($cell[1] - $t['gridY']) ** 2);
+                if ($dist > $t['range']) continue;
+                if ($t['slow'] > 0) { $z['stall'] = max($z['stall'], $t['slow']); continue; }
+                $hit = min($budget, $z['hp']); $z['hp'] -= $hit; $budget -= $hit;
+                if ($z['hp'] <= 0) { $z['alive'] = false; $killed++; $t['kills']++; }
+            }
+            unset($z);
+        }
+        unset($t);
+    }
+
+    foreach ($lanes as $i => $lane) $log[] = [
+        'gate' => $lane['gate']['kind'], 'facing' => $lane['gate']['facing'],
+        'from' => [$lane['gate']['gridX'], $lane['gate']['gridY']],
+        'cells' => count($lane['path']),
+    ];
+    $towerLog = [];
+    foreach ($towers as $t) $towerLog[] = ['slot' => $t['slot'], 'label' => $t['label'], 'kills' => $t['kills']];
+
+    return ['spawned' => count($zombies), 'killed' => $killed, 'leaked' => $leaked,
+            'lanes' => $log, 'towers' => $towerLog, 'sealed' => false];
 }
 
 function zv2_soldier_level(array $survivor):int{return max(1,(int)$survivor['attack_stat']+(int)$survivor['defense_stat']-4);}

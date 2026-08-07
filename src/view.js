@@ -1,7 +1,7 @@
 // Isometric renderer: draws the stronghold as a living compound (SOTD feel).
 // Read-only for now — facilities laid out on an iso grid, extruded by level,
 // coloured by category, dark when unpowered.
-import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, fmtDuration, cityColor } from './config.js';
+import { TW, TH, WORLD_SCALE, isoXY, facInfo, facColor, facRange, fmtDuration, cityColor } from './config.js';
 import { t } from './i18n.js';
 import { getSprite, getAnchor, getScale, onSpritesChanged } from './sprites.js';
 
@@ -28,7 +28,9 @@ const hash = (n) => { const x = Math.sin(n * 91.17) * 43758.5453; return x - Mat
 
 export function createView(canvas) {
   const ctx = canvas.getContext('2d');
-  const cam = { x: 0, y: 0, zoom: 1, worldZoom: .48, rot: 0 };   // rot: radians, SOTD right-drag rotate
+  // Compound opens zoomed out: the 16x16 settlement spans ~1344px of tile at 1:1,
+  // wider than the canvas, and the whole point is reading the layout at a glance.
+  const cam = { x: 0, y: 0, zoom: .55, worldZoom: .48, rot: 0 };   // rot: radians, SOTD right-drag rotate
   let W = 0, H = 0;
   let gridDims = { w: 7, h: 7 };   // last compound grid, for centerCompoundOn
 
@@ -265,6 +267,51 @@ export function createView(canvas) {
     return true;
   }
 
+  // Pre-built settlement housing: drawn procedurally rather than from sprites so
+  // ten of them cost nothing to load, and kept visually quieter than the
+  // facilities so the buildings a player actually owns still read first.
+  function house(sx, sy, s) {
+    const wall = ['#8d8672', '#7f7b69', '#948a71', '#837f6d'][s.variant % 4];
+    const roof = ['#6d4136', '#5f4a3a', '#77473a', '#5a4033'][s.variant % 4];
+    const hw = (TW / 2) * 0.74, hh = (TH / 2) * 0.74, h = 15 + (s.variant % 3) * 4;
+    ctx.beginPath(); ctx.ellipse(sx, sy + 8, 26, 9, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.26)'; ctx.fill();
+    prism(sx, sy, hw, hh, h, wall);
+    hipRoof(sx, sy, hw, hh, h, roof);
+    ctx.fillStyle = 'rgba(28,32,28,.85)';
+    ctx.fillRect(sx - 4, sy - h + 4, 4, 5); ctx.fillRect(sx + 2, sy - h + 4, 4, 5);
+    const ruined = s.hp < s.maxHp * 0.6;
+    if (ruined) { ctx.strokeStyle = 'rgba(30,22,18,.75)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx - hw * .5, sy - h); ctx.lineTo(sx, sy - h + 7); ctx.stroke(); }
+  }
+
+  // A gateway is a gap in the wall with a post either side. The main gate is
+  // wider and braced -- it is where the bulk of a wave comes through.
+  function gate(sx, sy, s) {
+    const main = s.kind === 'gate_main';
+    const w = main ? 15 : 11, postH = main ? 26 : 20;
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    ctx.beginPath(); ctx.ellipse(sx, sy + 6, 24, 8, 0, 0, Math.PI * 2); ctx.fill();
+    for (const dx of [-w, w]) {
+      ctx.fillStyle = '#4a4638'; ctx.fillRect(sx + dx - 3, sy - postH, 6, postH);
+      ctx.fillStyle = '#5d5844'; ctx.fillRect(sx + dx - 3, sy - postH, 6, 4);
+    }
+    ctx.strokeStyle = main ? '#c2a049' : '#8a8266'; ctx.lineWidth = main ? 3 : 2;
+    ctx.beginPath(); ctx.moveTo(sx - w, sy - postH + 3); ctx.lineTo(sx + w, sy - postH + 3); ctx.stroke();
+    if (main) { ctx.strokeStyle = 'rgba(196,160,73,.55)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx - w, sy - 4); ctx.lineTo(sx + w, sy - 12); ctx.stroke(); }
+  }
+
+  // Coverage ring for the selected emplacement: the honest footprint of what it
+  // can reach, drawn on the ground plane so it can be compared against the lanes.
+  function rangeRing(sx, sy, tiles) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,196,92,.5)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(sx, sy, tiles * TW / 2, tiles * TH / 2, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = 'rgba(255,196,92,.06)'; ctx.fill();
+    ctx.restore();
+  }
+
   function building(sx, sy, f, labels) {
     const info=facInfo(f.type),base=f.powered?facColor(f.type):GREY,hw=(TW/2)*INSET,hh=(TH/2)*INSET;
     if (!facilitySprite(sx, sy, f)) facilityModel(sx,sy,f,base);
@@ -328,7 +375,11 @@ export function createView(canvas) {
 
     // painter's order: back (small r+c) to front
     placed.sort((a, b) => (a.r + a.c) - (b.r + b.c));
-    const compoundPoints=[];emptyPlacements=[];const occupied=new Set(placed.map(f=>`${f.c}|${f.r}`));
+    // Houses and gateways hold their cells against construction, so they count as
+    // occupied for the empty-plot pass just as facilities do.
+    const structures = (state.structures || []).map((s) => ({ ...s, r: s.gridY, c: s.gridX }));
+    const compoundPoints=[];emptyPlacements=[];
+    const occupied=new Set([...placed.map(f=>`${f.c}|${f.r}`), ...structures.map(s=>`${s.c}|${s.r}`)]);
     let selCell=null;
     for (const cell of gridCells) {
       const [ox, oy] = isoXY(cell.r, cell.c);
@@ -342,13 +393,36 @@ export function createView(canvas) {
     placements = [];
     const badges = [];
     const labels = [];
+    // Structures and facilities share one painter's pass -- sorted apart, a house
+    // in front of a facility would draw behind it and the depth would break.
+    const drawList = [
+      ...placed.map((f) => ({ kind: 'facility', r: f.r, c: f.c, f })),
+      ...structures.map((s) => ({ kind: s.kind, r: s.r, c: s.c, s })),
+    ].sort((a, b) => (a.r + a.c) - (b.r + b.c));
+
+    // Coverage ring goes under everything so buildings are never obscured by it.
     for (const f of placed) {
+      if (f.slot !== selected) continue;
+      const reach = facRange(f.type, f.level);
+      if (!reach) continue;
       const [ox, oy] = isoXY(f.r, f.c);
+      rangeRing(originX + ox, originY + oy, reach);
+    }
+
+    for (const item of drawList) {
+      const [ox, oy] = isoXY(item.r, item.c);
       const sx = originX + ox, sy = originY + oy;
-      placements.push({ slot: f.slot, type: f.type, sx, sy, level: f.level });
-      building(sx, sy, f, labels);
-      const b = buildMap.get(f.slot);
-      if (b) badges.push({ sx, sy, b });
+      if (item.kind === 'facility') {
+        const f = item.f;
+        placements.push({ slot: f.slot, type: f.type, sx, sy, level: f.level });
+        building(sx, sy, f, labels);
+        const b = buildMap.get(f.slot);
+        if (b) badges.push({ sx, sy, b });
+      } else if (item.kind === 'house') {
+        house(sx, sy, item.s);
+      } else {
+        gate(sx, sy, item.s);
+      }
     }
     ctx.restore();
     // screen-space pass: upright labels, badges, and the night tint (covers all corners under rotation)
