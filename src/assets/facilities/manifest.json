@@ -1,59 +1,59 @@
 {
   "chem_lab": {
     "anchor": 1.0,
-    "scale": 0.78
+    "scale": 1
   },
   "comm_center": {
     "anchor": 0.9965,
-    "scale": 1.0
+    "scale": 1
   },
   "fortifications": {
-    "anchor": 1.0,
-    "scale": 1.0
+    "anchor": 0.9965,
+    "scale": 1
   },
   "garage": {
-    "anchor": 1.0,
-    "scale": 1.03
+    "anchor": 0.9959,
+    "scale": 1
   },
   "headquarters": {
     "anchor": 0.9974,
     "scale": 1.45
   },
   "life_support": {
-    "anchor": 1.0,
-    "scale": 1.0
+    "anchor": 0.9939,
+    "scale": 1
   },
   "medical_center": {
-    "anchor": 0.9959,
-    "scale": 1.15
+    "anchor": 0.997,
+    "scale": 1
   },
   "power_generator": {
     "anchor": 0.9964,
-    "scale": 1.0
+    "scale": 1
   },
   "radio_tower": {
     "anchor": 0.9974,
-    "scale": 1.0
+    "scale": 1
   },
   "research_center": {
-    "anchor": 0.9948,
-    "scale": 0.94
+    "anchor": 0.9721,
+    "scale": 1
   },
   "scrapyard": {
-    "anchor": 0.9941,
-    "scale": 1.0
+    "anchor": 0.9963,
+    "scale": 1
   },
   "staff_area": {
     "anchor": 0.82,
-    "scale": 1.07
+    "scale": 1
   },
   "storage": {
     "anchor": 0.9958,
-    "scale": 1.0
+    "scale": 1
   },
   "toolshop": {
-    "anchor": 1.0,
-    "scale": 0.92
+    "anchor": 0.997,
+    "scale": 1
   },
   "troop_quarters": {
     "anchor": 0.9008,

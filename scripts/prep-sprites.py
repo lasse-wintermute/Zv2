@@ -74,22 +74,12 @@ ANCHOR_OVERRIDES = {"staff_area": 0.82}
 # Sprites regenerated with the scale anchor (drum in frame + stated metres) come out
 # in proportion and sit at 1.0 -- their old corrections were calibrated against
 # broken art and would now push them back out of true.
+# Anything regenerated with the scale anchor sits at 1.0 and needs no correction --
+# that is the whole point of the anchor. Only two entries remain: the headquarters,
+# which predates it but reads well, and troop quarters, still on the old generation.
 SCALE_OVERRIDES = {
-    "headquarters":    1.45,   # five storeys; still towers, now at honest window scale
-    "medical_center":  1.15,
-    "staff_area":      1.07,
-    "troop_quarters":  1.05,   # judged -- long barracks, no lit glass detected
-    "garage":          1.03,
-    "power_generator": 1.00,   # rebuilt with the anchor
-    "storage":         1.00,   # rebuilt with the anchor
-    "comm_center":     1.00,   # rebuilt with the anchor
-    "radio_tower":     1.00,   # rebuilt with the anchor
-    "life_support":    1.00,
-    "fortifications":  1.00,   # judged -- bunker; the measure caught rust, not glass
-    "scrapyard":       1.00,   # judged -- forge glow skews the measure
-    "research_center": 0.94,
-    "toolshop":        0.92,
-    "chem_lab":        0.78,   # last of the rebuild list, still on the old generation
+    "headquarters":   1.45,   # five storeys; predates the anchor but reads well
+    "troop_quarters": 1.05,   # judged -- last one still on the old generation
 }
 
 
