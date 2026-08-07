@@ -50,7 +50,7 @@ for($slot=1;$slot<count($buildings);$slot++) {
     // Emplacements live in their own table and are never facilities, however they
     // were placed: a stale level here would render one at the grid default with no
     // position of its own.
-    if(in_array($slot,ZV2_EMPLACEMENT_TYPES,true))continue;
+    if(in_array($slot,ZV2_EMPLACEMENT_TYPES,true)||isset(ZV2_STRUCTURE_BUILDS[$slot]))continue;
     $lvl=(int)($buildings[$slot]??0);if($lvl<=0&&!isset($buildSlots[$slot]))continue;
     $a = $active[$slot] ?? 1;
     $facilities[] = [

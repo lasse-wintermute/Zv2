@@ -316,6 +316,25 @@ export function createView(canvas) {
     }
   }
 
+  // Road. Drawn flat on the ground and joined to its neighbours, so a laid route
+  // reads as one continuous street -- which matters, because the street is the
+  // decision: walkers take the easiest footing, so a road is deliberate bait.
+  function road(sx, sy, s, roadAt) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - TH / 2); ctx.lineTo(sx + TW / 2, sy);
+    ctx.lineTo(sx, sy + TH / 2); ctx.lineTo(sx - TW / 2, sy); ctx.closePath();
+    ctx.fillStyle = '#5d5a4e'; ctx.fill();
+    ctx.strokeStyle = 'rgba(120,114,92,.5)'; ctx.lineWidth = 1; ctx.stroke();
+    // Gravel speckle, deterministic per cell so it does not crawl between frames.
+    ctx.fillStyle = 'rgba(150,143,118,.5)';
+    for (let i = 0; i < 7; i++) {
+      const h1 = hash(s.c * 31 + s.r * 17 + i), h2 = hash(s.c * 13 + s.r * 29 + i);
+      ctx.fillRect(sx + (h1 - .5) * TW * .55, sy + (h2 - .5) * TH * .55, 2, 1.5);
+    }
+    ctx.restore();
+  }
+
   // Town wall. Borrowed from SOTD's approach: a wall is an ordinary tile, and the
   // sprite joins itself to whichever neighbours are also wall, so a ring of cells
   // reads as one continuous rampart with a catwalk rather than a row of posts.
@@ -532,8 +551,15 @@ export function createView(canvas) {
         placements.push({ slot: item.g.type, type: item.g.type, emplacementId: item.g.id, sx, sy, level: item.g.level });
       } else if (item.kind === 'wall') {
         wall(sx, sy, item.s, wallAt);
+      } else if (item.kind === 'road') {
+        road(sx, sy, item.s);
       } else {
         gate(sx, sy, item.s);
+      }
+      // Every element on the map answers a click, not just the facilities: a wall,
+      // a house, a gateway and a road all carry state worth inspecting.
+      if (item.kind !== 'facility' && item.kind !== 'gun') {
+        placements.push({ structure: item.s, kind: item.kind, sx, sy, level: 1 });
       }
     }
     ctx.restore();

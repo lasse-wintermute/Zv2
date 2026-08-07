@@ -104,6 +104,9 @@ const _FAC = [
   [41,'sniper_nest','mil','Sniper nest','Scharfschützennest'],
   [42,'mg_tower','mil','Machine gun tower','MG-Turm'],
   [43,'barricade','mil','Barricade','Barrikade'],
+  // Terrain the player lays to steer a wave rather than to fight it.
+  [44,'road','special','Road','Straße'],
+  [45,'settler_house','core','Settler house','Siedlerhaus'],
 ];
 
 // Emplacement reach in tiles, mirroring ZV2_DEFENSE_STATS in api/mechanics.php.

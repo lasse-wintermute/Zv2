@@ -22,6 +22,35 @@ if(($_POST['action']??'')==='demolish'){
  if(!$db->affected_rows)json_out(['ok'=>false,'result'=>'not_found','message'=>'That emplacement is already gone.','slot'=>$slot]);
  json_out(['ok'=>true,'result'=>'demolished','message'=>'Emplacement cleared.','slot'=>$slot]);
 }
+// Clearing player-laid terrain. Walls and gateways are not removable -- the
+// perimeter is the premise, not a choice.
+if(($_POST['action']??'')==='clear'){
+ [$cx,$cy]=array_map('intval',explode(',',(string)($_POST['cell']??'')));
+ $db->query("DELETE FROM compound_structures WHERE userid=$uid AND grid_x=$cx AND grid_y=$cy AND kind IN ('road','house')");
+ if(!$db->affected_rows)json_out(['ok'=>false,'result'=>'not_clearable','message'=>'That cannot be cleared.','slot'=>$slot]);
+ json_out(['ok'=>true,'result'=>'cleared','message'=>'Cleared.','slot'=>$slot]);
+}
+// Roads and houses: terrain the player lays to steer a wave. Same instant,
+// repeatable placement as a gun, but written to compound_structures because that
+// is what the lane search reads.
+if(isset(ZV2_STRUCTURE_BUILDS[$slot])){
+ zv2_ensure_compound($uid);$kind=ZV2_STRUCTURE_BUILDS[$slot];
+ if($gridX<0||$gridX>=ZV2_GRID_W||$gridY<0||$gridY>=ZV2_GRID_H)json_out(['ok'=>false,'result'=>'bad_plot','message'=>'Choose a spot inside the compound.','slot'=>$slot]);
+ foreach([['compound_structures','Something already stands there.'],['facility_positions','That plot holds a facility.'],['emplacements','An emplacement stands there.']] as [$tbl,$msg]){
+  $c=$db->query("SELECT 1 FROM $tbl WHERE userid=$uid AND grid_x=$gridX AND grid_y=$gridY LIMIT 1");
+  if($c&&$c->num_rows)json_out(['ok'=>false,'result'=>'plot_occupied','message'=>$msg,'slot'=>$slot]);
+ }
+ $hold=$db->query("SELECT ressis FROM strongholds WHERE userid=$uid LIMIT 1");if(!$hold||!$hold->num_rows)json_err('no_stronghold','Stronghold not found.',404);
+ $res=pipe_nums($hold->fetch_assoc()['ressis']);
+ $cq=$db->query("SELECT water,food,wood,metal,petrol FROM facility_costs WHERE facility_id=$slot AND level=1 LIMIT 1");
+ if(!$cq||!$cq->num_rows)json_out(['ok'=>false,'result'=>'no_cost','message'=>'No build cost defined.','slot'=>$slot]);
+ $cost=$cq->fetch_assoc();$keys=['water','food','wood','metal','petrol'];
+ foreach($keys as $i=>$key)if(($res[$i]??0)<(int)$cost[$key])json_out(['ok'=>false,'result'=>'not_enough','message'=>'Not enough resources.','slot'=>$slot]);
+ foreach($keys as $i=>$key)$res[$i]-=(int)$cost[$key];$rs=$db->real_escape_string(implode('|',$res));
+ $hp=$kind==='house'?140:60;$variant=($gridX*7+$gridY*13)%4;
+ $db->begin_transaction();try{$db->query("UPDATE strongholds SET ressis='$rs' WHERE userid=$uid");$db->query("INSERT INTO compound_structures(userid,kind,grid_x,grid_y,facing,hp,max_hp,variant) VALUES($uid,'$kind',$gridX,$gridY,'',$hp,$hp,$variant)");$db->commit();}catch(Throwable $e){$db->rollback();throw$e;}
+ json_out(['ok'=>true,'result'=>'placed','message'=>$kind==='road'?'Road laid.':'House raised.','slot'=>$slot]);
+}
 // Emplacements are placed repeatedly and raised immediately: a defence is a dozen
 // guns, and queueing them one at a time behind the single construction slot would
 // make laying out a firing line take an entire night.

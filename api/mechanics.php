@@ -157,8 +157,9 @@ function zv2_ensure_compound(int $uid): void {
 
     $w = ZV2_GRID_W; $h = ZV2_GRID_H; $mid = intdiv($w, 2);
     $rows = [];
-    // Main gate is two cells wide on the south wall -- the side facing the camera.
-    $rows[] = [$mid - 1, $h - 1, 'gate_main', 's'];
+    // One main gate, not two cells: two produced two independent lanes and split
+    // the pressure that is supposed to concentrate at the front. Four ways in
+    // total, each one worth defending.
     $rows[] = [$mid,     $h - 1, 'gate_main', 's'];
     $rows[] = [$mid,     0,      'gate_side', 'n'];
     $rows[] = [0,        $mid,   'gate_side', 'w'];
@@ -223,6 +224,9 @@ function zv2_ensure_compound(int $uid): void {
 
 /** Facility ids that are emplacements: placed repeatedly, not one per compound. */
 const ZV2_EMPLACEMENT_TYPES = [41, 42, 43];
+
+/** Terrain the player lays down to steer a wave. Repeatable, stored as structures. */
+const ZV2_STRUCTURE_BUILDS = [44 => 'road', 45 => 'house'];
 
 /** Every gun in the compound. Unlike facilities these are many per type. */
 function zv2_emplacements(int $uid): array {
@@ -291,19 +295,36 @@ function zv2_wave_lanes(int $uid, array $structures, array $facilities): array {
     foreach ($facilities as $f) if ((int)$f['slot'] === 17) $core = [$f['gridX'], $f['gridY']];
     unset($blocked["{$core[0]}|{$core[1]}"]);
 
+    // Ground cost, not a plain hop count: walkers take the easiest footing, so a
+    // road is bait. Laying one is how a player chooses where the wave will go,
+    // which only means anything if road is markedly cheaper than open ground.
+    $road = [];
+    foreach ($structures as $s) if ($s['kind'] === 'road') $road["{$s['gridX']}|{$s['gridY']}"] = true;
+    $costAt = function (int $x, int $y) use ($road): int {
+        return isset($road["$x|$y"]) ? 1 : 5;
+    };
+
     $lanes = [];
     foreach ($structures as $s) {
         if (strpos($s['kind'], 'gate') !== 0) continue;
         $start = [$s['gridX'], $s['gridY']];
-        $prev = []; $seen = ["{$start[0]}|{$start[1]}" => true]; $queue = [$start]; $found = false;
-        while ($queue) {
-            $cur = array_shift($queue);
-            if ($cur[0] === $core[0] && $cur[1] === $core[1]) { $found = true; break; }
+        // Dijkstra over the cost field. The grid is 256 cells, so a plain
+        // scan-for-minimum is cheaper than maintaining a heap.
+        $dist = ["{$start[0]}|{$start[1]}" => 0];
+        $prev = []; $done = []; $found = false;
+        while (true) {
+            $cur = null; $best = PHP_INT_MAX;
+            foreach ($dist as $k => $d) { if (!isset($done[$k]) && $d < $best) { $best = $d; $cur = $k; } }
+            if ($cur === null) break;
+            $done[$cur] = true;
+            [$cx, $cy] = array_map('intval', explode('|', $cur));
+            if ($cx === $core[0] && $cy === $core[1]) { $found = true; break; }
             foreach ([[1,0],[-1,0],[0,1],[0,-1]] as [$dx, $dy]) {
-                $nx = $cur[0] + $dx; $ny = $cur[1] + $dy; $k = "$nx|$ny";
+                $nx = $cx + $dx; $ny = $cy + $dy; $k = "$nx|$ny";
                 if ($nx < 0 || $ny < 0 || $nx >= $w || $ny >= $h) continue;
-                if (isset($seen[$k]) || isset($blocked[$k])) continue;
-                $seen[$k] = true; $prev[$k] = $cur; $queue[] = [$nx, $ny];
+                if (isset($done[$k]) || isset($blocked[$k])) continue;
+                $step = $best + $costAt($nx, $ny);
+                if (!isset($dist[$k]) || $step < $dist[$k]) { $dist[$k] = $step; $prev[$k] = [$cx, $cy]; }
             }
         }
         if (!$found) continue;                       // fully walled off: no lane from this gate
@@ -399,7 +420,9 @@ function zv2_simulate_wave(int $uid, int $day, int $threat, array $effects): arr
     $rand = zv2_seeded($uid * 31 + $day * 7);
     $zombies = [];
     foreach ($lanes as $i => $lane) {
-        $share = $lane['gate']['kind'] === 'gate_main' ? 0.45 : 0.55 / max(1, count($lanes) - 1);
+        // The main gate takes the bulk of a wave; the three side entries share the
+        // rest. That is what makes the front worth fortifying heaviest.
+        $share = $lane['gate']['kind'] === 'gate_main' ? 0.55 : 0.45 / max(1, count($lanes) - 1);
         $n = max(1, (int)round($total * $share));
         for ($z = 0; $z < $n; $z++) $zombies[] = [
             'lane' => $i, 'step' => -$z, 'hp' => 8 + $day, 'stall' => 0, 'alive' => true,

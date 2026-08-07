@@ -661,6 +661,43 @@ function refreshBuildMenu() {
   openBuildMenu(hit, cx, cy);
 }
 
+// Walls, houses, gateways and roads answer a click too. They are terrain rather
+// than buildings, so the popup reports condition and what the thing does to a
+// wave, and offers removal only for the ones the player laid down.
+const STRUCTURE_INFO = {
+  wall:      ['Town wall', 'Solid. Walkers cannot cross it — they must use a gateway.'],
+  gate_main: ['Main gate', 'The front door. Most of every wave comes through here.'],
+  gate_side: ['Side gate', 'A lesser way in. Shares what the main gate does not take.'],
+  house:     ['House', 'Solid. Blocks a route and pushes walkers onto the next one.'],
+  road:      ['Road', 'Easy footing, so walkers prefer it. Bait — lay it where the guns can see.'],
+};
+
+function openStructureMenu(hit, cx, cy) {
+  const s = hit.structure;
+  const [name, blurb] = STRUCTURE_INFO[hit.kind] || ['Structure', ''];
+  const items = [{ info: true, label: blurb }];
+  const pct = s.maxHp ? Math.round((s.hp / s.maxHp) * 100) : 100;
+  items.push({ info: true, label: `Condition ${pct}%`, small: `${s.hp} / ${s.maxHp}`,
+               tip: 'Structures take damage when a wave reaches them.' });
+  items.push({ info: true, label: `Plot ${s.gridX + 1}|${s.gridY + 1}` });
+  if (hit.kind === 'road' || hit.kind === 'house') {
+    items.push({
+      key: 'x', label: 'Clear', small: 'removes it — no refund',
+      onClick: async () => {
+        setStatus('Clearing…');
+        try {
+          const r = await postBuild(hit.kind === 'road' ? 44 : 45, undefined, undefined,
+                                    { clearStructure: `${s.gridX},${s.gridY}` });
+          if (!r.ok) throw new Error(r.message || 'Could not clear.');
+          await load();
+          setStatus(r.message || 'Cleared.', false, 'good');
+        } catch (err) { setStatus(err.message, true); }
+      },
+    });
+  }
+  context.openAt(cx, cy, name, items, 'structure', 'structure');
+}
+
 // Emplacement popup. Deliberately not the facility menu: a gun has no staff, no
 // production and no upgrade path, and the reach is the only number that decides
 // whether it was worth placing -- so that goes first.
@@ -779,6 +816,7 @@ function openContextMenu(e) {
     if (!hit) return;
     if (hit.empty) { openBuildMenu(hit, e.clientX, e.clientY); return; }
     if (hit.emplacementId) { openEmplacementMenu(hit, e.clientX, e.clientY); return; }
+  if (hit.structure) { openStructureMenu(hit, e.clientX, e.clientY); return; }
     openFacilityMenu(hit.slot, e.clientX, e.clientY);
     return;
   }
@@ -824,6 +862,7 @@ async function onClick(e) {
   // and routing a gun down the facility one looked up slot 41 as a building --
   // which is why the tooltip read level 1 while the popup said level 0.
   if (hit.emplacementId) { openEmplacementMenu(hit, e.clientX, e.clientY); return; }
+  if (hit.structure) { openStructureMenu(hit, e.clientX, e.clientY); return; }
   await openFacilityMenu(hit.slot, e.clientX, e.clientY);   // context-menu style, like the build menu
 }
 

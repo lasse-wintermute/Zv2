@@ -117,6 +117,7 @@ export async function postBuild(slot, gridX = null, gridY = null, opts = {}) {
       slot: String(slot),
       ...(gridX === null || gridX === undefined ? {} : { gridX: String(gridX), gridY: String(gridY) }),
       ...(opts.demolish ? { action: 'demolish', emplacement: String(opts.demolish) } : {}),
+      ...(opts.clearStructure ? { action: 'clear', cell: String(opts.clearStructure) } : {}),
     }),
   });
   if (res.status === 401) throw new ApiError('no_player', 'No active player', 401);
