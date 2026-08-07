@@ -49,8 +49,16 @@ is exactly that, and no scale value rescues it.
 So every regenerated prompt states the building's real size **and** includes a
 fixed reference object:
 
-> **a standard rusted 200-litre oil drum stands upright against the wall beside
-> the entrance**
+> **a standard rusted 200-litre oil drum stands alone in the bottom-left corner of
+> the frame, clearly separated from the building and touching nothing**
+
+The *position* matters as much as the drum. Stated only as "beside the entrance",
+the drum tells the model what size things are but leaves the script nothing it can
+find. Isolated in a known corner it becomes measurable: `measure_drum()` takes the
+separable object there, and since the drum is the same 0.88 m in every image,
+scaling each sprite until its drum is the same pixel height makes the buildings
+agree **by construction** rather than by anyone's judgement. A measured drum
+overrides the hand-set scale for that sprite.
 
 A drum is 0.88 m tall and appears in this world without looking staged. Two
 things follow. The model has something concrete to size the architecture

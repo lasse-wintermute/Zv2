@@ -24,9 +24,12 @@ FENCE = re.compile(r"```\n(.*?)```", re.S)
 # that is already in the game, so the page opens on the work rather than on an
 # archive of prompts that have already been used.
 URGENCY = [
-    (re.compile(r"\bREBUILD\b|\bREGENERATE\b", re.I), 0, "To do"),
-    (re.compile(r"\bNEW\b", re.I), 1, "To do"),
-    (re.compile(r"\bSUPERSEDED\b|\bKEEP AS IS\b|\bdone\b", re.I), 3, "Superseded"),
+    # Superseded first: those headings also contain REBUILD-ish words, and the
+    # first pattern to match wins.
+    (re.compile(r"\bSUPERSEDED\b|\bKEEP AS IS\b", re.I), 4, "Superseded"),
+    (re.compile(r"\bdone\b", re.I),                      3, "Already generated"),
+    (re.compile(r"lowest priority", re.I),               1, "To do"),
+    (re.compile(r"\bREBUILD\b|\bREGENERATE\b|\bNEW\b", re.I), 0, "To do"),
 ]
 
 

@@ -82,6 +82,43 @@ SCALE_OVERRIDES = {
     "troop_quarters": 1.05,   # judged -- last one still on the old generation
 }
 
+# --- The drum as a ruler -------------------------------------------------------
+#
+# Stating the drum in the prompt only tells the MODEL what size things are. Measure
+# it and it becomes a real ruler: a 0.88 m drum drawn N pixels tall fixes the metres
+# per pixel of that entire image, so scaling every sprite until its drum is the same
+# height lines all the buildings up by construction rather than by my judgement.
+#
+# DRUM_PX holds the measured drum height in each sprite's own trimmed pixels. Where
+# a sprite has an entry it wins over SCALE_OVERRIDES, because a measurement beats a
+# guess. Newly generated art should place the drum where the prompt now says --
+# alone in the bottom-left of the frame, clear of the building -- which is what lets
+# measure_drum() find it without a human in the loop.
+TARGET_DRUM_PX = 26.0     # 0.88 m at the size a facility should read on one tile
+DRUM_PX = {}              # key -> measured px; populated as sprites are measured
+
+
+def measure_drum(alpha, corner=0.34):
+    """Height in pixels of the isolated object in the bottom-left corner.
+
+    Returns None when nothing separable is there, so an unmeasured sprite falls
+    back to its override rather than being scaled by a bad reading.
+    """
+    mask = np.asarray(alpha, dtype=np.int16) > 128
+    h, w = mask.shape
+    box = mask[int(h * (1 - corner)):, :int(w * corner)]
+    if not box.any():
+        return None
+    labels, count = ndimage.label(box)
+    if not count:
+        return None
+    sizes = ndimage.sum(box, labels, range(1, count + 1))
+    best = int(np.argmax(sizes)) + 1
+    rows = np.flatnonzero((labels == best).any(axis=1))
+    height = rows.max() - rows.min() + 1
+    # A drum is a small upright object. Anything filling the corner is the building.
+    return float(height) if height < h * 0.3 else None
+
 
 # Facility type id -> key, so files can simply be named after the type ("17.jpg").
 TYPE_KEYS = {
@@ -271,11 +308,19 @@ def process(path, out_dir, key, size, opts, dry_run):
         else:
             out.save(dest, "PNG", optimize=True)
     anchor = ANCHOR_OVERRIDES.get(key, footprint_anchor(out.getchannel("A"), opts.footprint))
+    # A measured drum outranks a hand-set scale: it is the same physical object in
+    # every image, so matching its height is what makes the buildings agree.
+    drum = DRUM_PX.get(key)
+    if drum:
+        scale = round(TARGET_DRUM_PX / drum * (size / max(out.size)), 3)
+    else:
+        scale = SCALE_OVERRIDES.get(key, 1)
     size_kb = os.path.getsize(dest) / 1024 if os.path.exists(dest) else 0
     note = f", {tainted*100:.1f}% recoloured to steel" if tainted >= opts.neutralise_above else ""
     lifted = f", anchor {anchor:.2f}" if anchor < 0.97 else ""
-    return anchor, (f"  {os.path.basename(path)} -> {key}.{opts.format}  "
-                    f"{out.size[0]}x{out.size[1]}px, {covered:.0f}% opaque, {size_kb:.0f} KB{note}{lifted}")
+    ruler = f", drum {drum:.0f}px -> scale {scale}" if drum else (f", scale {scale}" if scale != 1 else "")
+    return (anchor, scale), (f"  {os.path.basename(path)} -> {key}.{opts.format}  "
+                             f"{out.size[0]}x{out.size[1]}px, {covered:.0f}% opaque, {size_kb:.0f} KB{note}{lifted}{ruler}")
 
 
 def main():
@@ -340,7 +385,7 @@ def main():
     # decoding every sprite to a scratch canvas on load. Ship them alongside instead.
     if not args.dry_run and anchors:
         with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as fh:
-            json.dump({k: {"anchor": round(v, 4), "scale": SCALE_OVERRIDES.get(k, 1)}
+            json.dump({k: {"anchor": round(v[0], 4), "scale": v[1]}
                        for k, v in sorted(anchors.items())}, fh, indent=2)
         print(f"\nwrote manifest.json ({len(anchors)} sprites)")
 
