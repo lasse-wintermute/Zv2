@@ -566,8 +566,12 @@ canvas.addEventListener('pointermove', (e) => {
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
-  view.cam.x = drag.cx + dx;
-  view.cam.y = drag.cy + dy;
+  // cam.x/y are applied inside the zoomed transform, so a raw pixel delta moves
+  // the map by that much times the zoom -- at 4x the compound shot away from the
+  // cursor. Dividing by the zoom keeps the grab point under the pointer.
+  const z = mode === 'world' ? view.cam.worldZoom : view.cam.zoom;
+  view.cam.x = drag.cx + dx / z;
+  view.cam.y = drag.cy + dy / z;
   requestRender();
 });
 canvas.addEventListener('pointerup', (e) => {

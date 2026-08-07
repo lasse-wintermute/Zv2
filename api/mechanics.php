@@ -145,9 +145,15 @@ function zv2_ensure_compound(int $uid): void {
     $r = $db->query("SELECT COUNT(*) c FROM compound_structures WHERE userid=$uid");
     if ($r && (int)($r->fetch_assoc()['c'] ?? 0) > 0) return;
 
+    // Recentre a layout still sitting on the old 7x7 grid -- but only if the whole
+    // layout fits inside it. Guarding per-row would shift the same compound twice
+    // if this ever ran again, scattering facilities that had already moved.
     $shift = intdiv(ZV2_GRID_W - 7, 2);
-    $db->query("UPDATE facility_positions SET grid_x=grid_x+$shift, grid_y=grid_y+$shift
-                WHERE userid=$uid AND grid_x<7 AND grid_y<7");
+    $b = $db->query("SELECT MAX(grid_x) mx, MAX(grid_y) my FROM facility_positions WHERE userid=$uid");
+    $bounds = $b && $b->num_rows ? $b->fetch_assoc() : null;
+    if ($bounds && $bounds['mx'] !== null && (int)$bounds['mx'] <= 6 && (int)$bounds['my'] <= 6) {
+        $db->query("UPDATE facility_positions SET grid_x=grid_x+$shift, grid_y=grid_y+$shift WHERE userid=$uid");
+    }
 
     $w = ZV2_GRID_W; $h = ZV2_GRID_H; $mid = intdiv($w, 2);
     $rows = [];
@@ -300,8 +306,12 @@ function zv2_resolve_raid(int $uid,int $day,array &$resources,array $effects):ar
     $defense=(int)$effects['defense']+$wave['killed'];
     $breach=max(0,$wave['leaked']*2-(int)$effects['defense']);$loss=0;$wounded=null;$damage=0;
     if($breach>0){
-        $loss=min($breach*2,(int)floor((float)($resources[1]??0)*.2));$resources[1]=max(0,(float)($resources[1]??0)-$loss);
-        $victims=1+(int)floor($breach/12);
+        // Waves land ten times as often as the old nightly raid, so per-wave
+        // attrition is scaled to match. Left at the old rate a compound loses a
+        // fifth of its food every few minutes and can never afford the guns that
+        // would stop the next one -- a spiral the player cannot build out of.
+        $loss=min((int)ceil($breach/3),(int)floor((float)($resources[1]??0)*.04));$resources[1]=max(0,(float)($resources[1]??0)-$loss);
+        $victims=$breach<20?0:1+(int)floor($breach/60);
         $q=$db->query("SELECT id,hp FROM survivors WHERE userid=$uid AND hp>0 ORDER BY job_facility IS NULL DESC,id LIMIT $victims");
         while($q&&($sv=$q->fetch_assoc())){$vid=(int)$sv['id'];$hit=min((int)$sv['hp'],max(1,(int)ceil($breach/2)));if($wounded===null){$wounded=$vid;$damage=$hit;}$db->query("UPDATE survivors SET hp=GREATEST(0,hp-$hit),fatigue=LEAST(100,fatigue+10) WHERE id=$vid");}
     }

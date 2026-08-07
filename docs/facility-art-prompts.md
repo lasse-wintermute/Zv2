@@ -36,6 +36,46 @@ if the garage starts sprouting an admin tower, remove the reference and fall bac
 prompt alone. Every prompt below repeats the full style block verbatim, so it stands up
 without a reference image — the reference is an accelerator, not a dependency.
 
+## Scale anchor (required on every regeneration)
+
+Wave one was generated without any shared sense of size, so the model picked its
+own camera distance per image. Drawing them all at one tile width then made a
+shack and a warehouse the same size, and the giveaway was window and door
+dimensions. `prep-sprites.py` carries per-sprite scale values to paper over it,
+but a multiplier can only fix how big a building is drawn — it cannot fix a
+building drawn with a giant louvre relative to its own walls. The power generator
+is exactly that, and no scale value rescues it.
+
+So every regenerated prompt states the building's real size **and** includes a
+fixed reference object:
+
+> **a standard rusted 200-litre oil drum stands upright against the wall beside
+> the entrance**
+
+A drum is 0.88 m tall and appears in this world without looking staged. Two
+things follow. The model has something concrete to size the architecture
+against, which is what stops the proportions drifting. And it gives the prep
+script a ruler: measuring the drum in each output yields the true scale
+directly, instead of the window-size guessing and the failed corrugation-pitch
+attempt.
+
+State dimensions in metres in the SUBJECT line — "a hall 14 metres wide and 7
+metres to the eaves" — not in vague terms like "large".
+
+### Rebuild list
+
+| facility | why |
+|---|---|
+| `power_generator` | louvre and pipework enormous against its own walls; worst offender |
+| `chem_lab` | needed a 0.78 correction — drawn much closer than the set |
+| `radio_tower` | 0.82; shack reads oversized against its mast |
+| `comm_center` | 0.85 |
+| `storage` | 1.15; warehouse reads small for what it is |
+
+Do `power_generator` first as the pilot. If the drum reference holds its scale,
+the rest are worth the credits; if it doesn't, we stop and rethink rather than
+burning 400 credits proving the same point five times.
+
 ## Why the prompts are worded the way they are
 
 - **Magenta background.** Nothing in a weathered post-apocalyptic palette is magenta, so

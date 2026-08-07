@@ -17,6 +17,8 @@ export function fromApi(resp) {
     survivorsAlive: s.survivorsAlive ?? null,
     population: s.population,
     facilities: s.facilities,    // [ {slot,type,level,active,powered} ]
+    structures: s.structures || [],       // pre-built town: houses and gateways
+    emplacements: s.emplacements || [],   // defensive guns, many per type
     grid: s.grid || { w: 7, h: 7 },
     builds: s.builds || [],      // [ {slot,due,toLevel} ] in-progress upgrades
     world: s.world || null,
